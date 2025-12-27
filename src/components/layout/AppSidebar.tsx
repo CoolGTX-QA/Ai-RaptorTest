@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -55,6 +56,8 @@ const menuItems = {
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     projects: true,
     testManagement: true,
@@ -278,11 +281,16 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-4">
-        <Button variant="ghost" className="w-full justify-start gap-2" asChild>
-          <Link to="/">
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
-          </Link>
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start gap-2"
+          onClick={async () => {
+            await signOut();
+            navigate("/");
+          }}
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Logout</span>
         </Button>
       </SidebarFooter>
     </Sidebar>

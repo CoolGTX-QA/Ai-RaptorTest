@@ -4,55 +4,70 @@ import { Layers, CheckCircle, Users, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, signUp, user } = useAuth();
+
+  // Redirect if already logged in
+  if (user) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
+    const { error } = await signIn(email, password);
+    
+    setIsLoading(false);
+    
+    if (error) {
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
       navigate("/dashboard");
-    }, 1000);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate registration
-    setTimeout(() => {
-      setIsLoading(false);
+    const { error } = await signUp(email, password, fullName);
+    
+    setIsLoading(false);
+    
+    if (error) {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
       toast({
         title: "Account created!",
         description: "Your account has been created successfully.",
       });
       navigate("/dashboard");
-    }, 1000);
-  };
-
-  const handleDemoLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Demo Mode",
-        description: "You are now using the demo account.",
-      });
-      navigate("/dashboard");
-    }, 500);
+    }
   };
 
   return (
@@ -84,10 +99,13 @@ export default function Auth() {
                 <TabsContent value="login" className="mt-4">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
-                        id="username"
-                        placeholder="Enter your username"
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -97,16 +115,10 @@ export default function Auth() {
                         id="password"
                         type="password"
                         placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                       />
-                    </div>
-                    <div className="flex items-center justify-end">
-                      <a
-                        href="#"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Forgot password?
-                      </a>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? "Signing in..." : "Login"}
@@ -117,11 +129,12 @@ export default function Auth() {
                 <TabsContent value="register" className="mt-4">
                   <form onSubmit={handleRegister} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="reg-username">Username</Label>
+                      <Label htmlFor="reg-fullname">Full Name</Label>
                       <Input
-                        id="reg-username"
-                        placeholder="Choose a username"
-                        required
+                        id="reg-fullname"
+                        placeholder="Enter your full name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -130,6 +143,8 @@ export default function Auth() {
                         id="reg-email"
                         type="email"
                         placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -139,6 +154,8 @@ export default function Auth() {
                         id="reg-password"
                         type="password"
                         placeholder="Create a password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                       />
                     </div>
@@ -150,22 +167,9 @@ export default function Auth() {
               </Tabs>
             </CardHeader>
             <CardContent className="pt-0 pb-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or</span>
-                </div>
+              <div className="text-center text-sm text-muted-foreground">
+                By continuing, you agree to our Terms of Service
               </div>
-              <Button
-                variant="outline"
-                className="w-full mt-4"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-              >
-                Try Demo Account
-              </Button>
             </CardContent>
           </Card>
         </div>
