@@ -12,6 +12,8 @@ import TestExecution from "./pages/TestExecution";
 import AIGeneration from "./pages/AIGeneration";
 import RiskAssessment from "./pages/RiskAssessment";
 import Defects from "./pages/Defects";
+import Reports from "./pages/Reports";
+import Workspaces from "./pages/Workspaces";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,11 +33,11 @@ const App = () => (
             <Route path="/ai-generation" element={<ProtectedRoute><AIGeneration /></ProtectedRoute>} />
             <Route path="/risk-assessment" element={<ProtectedRoute><RiskAssessment /></ProtectedRoute>} />
             <Route path="/defects" element={<ProtectedRoute><Defects /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/reports" element={<Navigate to="/dashboard" replace />} />
             <Route path="/members" element={<Navigate to="/dashboard" replace />} />
             <Route path="/workspace-settings" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/workspaces" element={<Navigate to="/dashboard" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
