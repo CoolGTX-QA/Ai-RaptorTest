@@ -46,7 +46,13 @@ const menuItems = {
     { title: "Risk Assessment", url: "/risk-assessment", icon: Shield },
   ],
   reports: [
-    { title: "Reports Dashboard", url: "/reports", icon: BarChart3 },
+    { title: "Reports Overview", url: "/reports", icon: BarChart3 },
+    { title: "Test Execution", url: "/reports/test-execution", icon: Play },
+    { title: "Test Analytics", url: "/reports/test-analytics", icon: BarChart3 },
+    { title: "Defect Leakage", url: "/reports/defect-leakage", icon: Bug },
+    { title: "RCA Report", url: "/reports/rca", icon: Shield },
+    { title: "Traceability", url: "/reports/traceability", icon: Layers },
+    { title: "Advanced Reports", url: "/reports/advanced", icon: Sparkles },
   ],
   settings: [
     { title: "Members & Roles", url: "/members", icon: Users },
