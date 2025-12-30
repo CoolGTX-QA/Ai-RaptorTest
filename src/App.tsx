@@ -12,7 +12,13 @@ import TestExecution from "./pages/TestExecution";
 import AIGeneration from "./pages/AIGeneration";
 import RiskAssessment from "./pages/RiskAssessment";
 import Defects from "./pages/Defects";
-import Reports from "./pages/Reports";
+import ReportsOverview from "./pages/reports/ReportsOverview";
+import TestExecutionReport from "./pages/reports/TestExecutionReport";
+import TestAnalyticsReport from "./pages/reports/TestAnalyticsReport";
+import DefectLeakageReport from "./pages/reports/DefectLeakageReport";
+import RCAReport from "./pages/reports/RCAReport";
+import RequirementTraceability from "./pages/reports/RequirementTraceability";
+import AdvancedReports from "./pages/reports/AdvancedReports";
 import Workspaces from "./pages/Workspaces";
 import NotFound from "./pages/NotFound";
 
@@ -33,12 +39,17 @@ const App = () => (
             <Route path="/ai-generation" element={<ProtectedRoute><AIGeneration /></ProtectedRoute>} />
             <Route path="/risk-assessment" element={<ProtectedRoute><RiskAssessment /></ProtectedRoute>} />
             <Route path="/defects" element={<ProtectedRoute><Defects /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><ReportsOverview /></ProtectedRoute>} />
+            <Route path="/reports/test-execution" element={<ProtectedRoute><TestExecutionReport /></ProtectedRoute>} />
+            <Route path="/reports/test-analytics" element={<ProtectedRoute><TestAnalyticsReport /></ProtectedRoute>} />
+            <Route path="/reports/defect-leakage" element={<ProtectedRoute><DefectLeakageReport /></ProtectedRoute>} />
+            <Route path="/reports/rca" element={<ProtectedRoute><RCAReport /></ProtectedRoute>} />
+            <Route path="/reports/traceability" element={<ProtectedRoute><RequirementTraceability /></ProtectedRoute>} />
+            <Route path="/reports/advanced" element={<ProtectedRoute><AdvancedReports /></ProtectedRoute>} />
             <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
             <Route path="/members" element={<Navigate to="/dashboard" replace />} />
             <Route path="/workspace-settings" element={<Navigate to="/dashboard" replace />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
