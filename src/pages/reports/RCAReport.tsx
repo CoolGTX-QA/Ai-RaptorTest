@@ -1,14 +1,7 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -18,13 +11,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Download,
-  Calendar,
   Search,
   CheckCircle,
   Clock,
   AlertCircle,
-  FileWarning,
 } from "lucide-react";
 import {
   PieChart as RechartsPieChart,
@@ -32,13 +22,15 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  Legend,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
 } from "recharts";
+import { ReportHeader } from "@/components/reports/ReportHeader";
+import { StatCard } from "@/components/reports/StatCard";
+import { ChartCard } from "@/components/reports/ChartCard";
 
 const rcaCategoryData = [
   { name: "Code Defects", value: 35, color: "hsl(var(--chart-1))" },
@@ -65,6 +57,9 @@ const actionStatusData = [
 ];
 
 export default function RCAReport() {
+  const [selectedProject, setSelectedProject] = useState("all-projects");
+  const [selectedTimeRange, setSelectedTimeRange] = useState("last-30");
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Implemented":
@@ -81,139 +76,84 @@ export default function RCAReport() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">RCA Report</h1>
-            <p className="text-muted-foreground">
-              Root cause categories, preventive actions, and implementation tracking
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Select defaultValue="all-projects">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-projects">All Projects</SelectItem>
-                <SelectItem value="project-1">E-commerce Platform</SelectItem>
-                <SelectItem value="project-2">Mobile App</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="last-30">
-              <SelectTrigger className="w-[150px]">
-                <Calendar className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last-7">Last 7 days</SelectItem>
-                <SelectItem value="last-30">Last 30 days</SelectItem>
-                <SelectItem value="last-90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </div>
-        </div>
+        <ReportHeader
+          title="RCA Report"
+          description="Root cause categories, preventive actions, and implementation tracking"
+          selectedProject={selectedProject}
+          selectedTimeRange={selectedTimeRange}
+          onProjectChange={setSelectedProject}
+          onTimeRangeChange={setSelectedTimeRange}
+        />
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card className="border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total RCAs</CardTitle>
-              <Search className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">30</div>
-              <p className="text-xs text-muted-foreground">This quarter</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Implemented</CardTitle>
-              <CheckCircle className="h-4 w-4 text-chart-1" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">15</div>
-              <p className="text-xs text-primary">50% completion</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
-              <Clock className="h-4 w-4 text-chart-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">8</div>
-              <p className="text-xs text-muted-foreground">Being worked on</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
-              <AlertCircle className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">7</div>
-              <p className="text-xs text-destructive">Requires attention</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total RCAs"
+            value="30"
+            description="This quarter"
+            icon={Search}
+          />
+          <StatCard
+            title="Implemented"
+            value="15"
+            description="50% completion"
+            icon={CheckCircle}
+            iconClassName="text-chart-1"
+            descriptionClassName="text-primary"
+          />
+          <StatCard
+            title="In Progress"
+            value="8"
+            description="Being worked on"
+            icon={Clock}
+            iconClassName="text-chart-4"
+          />
+          <StatCard
+            title="Pending"
+            value="7"
+            description="Requires attention"
+            icon={AlertCircle}
+            iconClassName="text-destructive"
+            descriptionClassName="text-destructive"
+          />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Root Cause Distribution */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">Root Cause Categories</CardTitle>
-              <CardDescription>Distribution of defects by root cause</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={rcaCategoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {rcaCategoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <ChartCard title="Root Cause Categories" description="Distribution of defects by root cause">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={rcaCategoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {rcaCategoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
           {/* Action Status */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">Preventive Action Status</CardTitle>
-              <CardDescription>Implementation tracking overview</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={actionStatusData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                    <YAxis type="category" dataKey="status" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} width={100} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <ChartCard title="Preventive Action Status" description="Implementation tracking overview">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={actionStatusData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                <YAxis type="category" dataKey="status" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} width={100} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
         </div>
 
         {/* RCA Details Table */}
@@ -238,12 +178,12 @@ export default function RCAReport() {
                 {rcaDetailedData.map((rca) => (
                   <TableRow key={rca.id}>
                     <TableCell className="font-medium">{rca.id}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">{rca.defect}</TableCell>
+                    <TableCell className="max-w-[150px] truncate" title={rca.defect}>{rca.defect}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{rca.category}</Badge>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">{rca.rootCause}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{rca.preventiveAction}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={rca.rootCause}>{rca.rootCause}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={rca.preventiveAction}>{rca.preventiveAction}</TableCell>
                     <TableCell>{getStatusBadge(rca.status)}</TableCell>
                   </TableRow>
                 ))}
