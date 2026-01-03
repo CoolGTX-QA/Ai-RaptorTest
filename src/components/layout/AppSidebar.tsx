@@ -33,6 +33,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 const menuItems = {
+  workspaces: [
+    { title: "Workspaces", url: "/workspaces", icon: Layers },
+  ],
   projects: [
     { title: "All Projects", url: "/projects", icon: FolderKanban },
   ],
@@ -55,7 +58,6 @@ const menuItems = {
     { title: "Advanced Reports", url: "/reports/advanced", icon: Sparkles },
   ],
   settings: [
-    { title: "Members & Roles", url: "/members", icon: Users },
     { title: "Workspace Settings", url: "/workspace-settings", icon: Settings },
   ],
 };
@@ -65,6 +67,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    workspaces: true,
     projects: true,
     testManagement: true,
     aiTools: true,
@@ -109,6 +112,41 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+        <SidebarGroup>
+          <SidebarGroupLabel
+            onClick={() => toggleSection("workspaces")}
+            className="flex cursor-pointer items-center justify-between hover:bg-accent/50 rounded px-2"
+          >
+            <span>WORKSPACES</span>
+            {expandedSections.workspaces ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </SidebarGroupLabel>
+          {expandedSections.workspaces && (
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.workspaces.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      className={cn(
+                        isActive(item.url) && "bg-accent text-accent-foreground"
+                      )}
+                    >
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
+        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel

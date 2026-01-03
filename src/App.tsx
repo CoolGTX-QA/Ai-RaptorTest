@@ -20,6 +20,7 @@ import RCAReport from "./pages/reports/RCAReport";
 import RequirementTraceability from "./pages/reports/RequirementTraceability";
 import AdvancedReports from "./pages/reports/AdvancedReports";
 import Workspaces from "./pages/Workspaces";
+import WorkspaceMembers from "./pages/WorkspaceMembers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,8 @@ const App = () => (
             <Route path="/reports/traceability" element={<ProtectedRoute><RequirementTraceability /></ProtectedRoute>} />
             <Route path="/reports/advanced" element={<ProtectedRoute><AdvancedReports /></ProtectedRoute>} />
             <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
+            <Route path="/workspaces/:workspaceId/members" element={<ProtectedRoute><WorkspaceMembers /></ProtectedRoute>} />
+            <Route path="/workspaces/:workspaceId/settings" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
             <Route path="/members" element={<Navigate to="/dashboard" replace />} />
             <Route path="/workspace-settings" element={<Navigate to="/dashboard" replace />} />
