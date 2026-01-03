@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { RoleBadge } from "@/components/RoleBadge";
+import { AppRole } from "@/hooks/useRBAC";
 
 interface Workspace {
   id: string;
@@ -46,6 +48,7 @@ interface Workspace {
 }
 
 export default function Workspaces() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -159,18 +162,6 @@ export default function Workspaces() {
     }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "default";
-      case "manager":
-        return "secondary";
-      case "tester":
-        return "outline";
-      default:
-        return "outline";
-    }
-  };
 
   return (
     <AppLayout>
@@ -269,11 +260,11 @@ export default function Workspaces() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/workspaces/${workspace.id}/settings`)}>
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/workspaces/${workspace.id}/members`)}>
                         <Users className="mr-2 h-4 w-4" />
                         Manage Members
                       </DropdownMenuItem>
@@ -292,10 +283,8 @@ export default function Workspaces() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <Badge variant={getRoleBadgeVariant(workspace.role || "viewer")}>
-                      {workspace.role}
-                    </Badge>
-                    <Button variant="outline" size="sm">
+                    <RoleBadge role={(workspace.role || "viewer") as AppRole} />
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/workspaces/${workspace.id}/members`)}>
                       Open
                     </Button>
                   </div>
