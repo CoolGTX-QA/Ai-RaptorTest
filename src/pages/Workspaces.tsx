@@ -131,21 +131,17 @@ export default function Workspaces() {
     try {
       setCreating(true);
       
-      const { data, error } = await supabase
-        .from("workspaces")
-        .insert({
-          name: newWorkspace.name.trim(),
-          description: newWorkspace.description.trim() || null,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+      const { error } = await supabase.from("workspaces").insert({
+        name: newWorkspace.name.trim(),
+        description: newWorkspace.description.trim() || null,
+        created_by: user.id,
+      });
 
       if (error) throw error;
 
       toast({
         title: "Workspace created",
-        description: `"${data.name}" has been created successfully.`,
+        description: `"${newWorkspace.name.trim()}" has been created successfully.`,
       });
 
       setNewWorkspace({ name: "", description: "" });
