@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Layers,
   FolderKanban,
@@ -11,7 +12,6 @@ import {
   Clock,
   ArrowRight,
   Sparkles,
-  Shield,
   Play,
   BarChart3,
 } from "lucide-react";
@@ -28,6 +28,18 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+
+interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  workspace_id: string;
+  workspace_name: string;
+}
 
 const stats = [
   {
@@ -127,6 +139,63 @@ const quickLinks = [
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        // Get all workspaces user is a member of
+        const { data: memberships, error: memberError } = await supabase
+          .from("workspace_members")
+          .select("workspace_id, workspaces(name)")
+          .eq("user_id", user.id)
+          .not("accepted_at", "is", null);
+
+        if (memberError) throw memberError;
+
+        if (!memberships || memberships.length === 0) {
+          setProjects([]);
+          return;
+        }
+
+        const workspaceIds = memberships.map((m) => m.workspace_id);
+        const workspaceMap = new Map(
+          memberships.map((m) => [
+            m.workspace_id,
+            (m.workspaces as any)?.name || "Unknown Workspace",
+          ])
+        );
+
+        // Get all projects from those workspaces
+        const { data: projectsData, error: projectsError } = await supabase
+          .from("projects")
+          .select("id, name, description, status, workspace_id")
+          .in("workspace_id", workspaceIds)
+          .order("created_at", { ascending: false });
+
+        if (projectsError) throw projectsError;
+
+        const projectsWithWorkspace = (projectsData || []).map((p) => ({
+          ...p,
+          workspace_name: workspaceMap.get(p.workspace_id) || "Unknown",
+        }));
+
+        setProjects(projectsWithWorkspace);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    fetchProjects();
+  }, [user]);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -135,7 +204,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">
-              Welcome back, Demo User! Here's an overview of your testing activities.
+              Welcome back! Here's an overview of your testing activities.
             </p>
           </div>
           <div className="flex gap-2">
@@ -171,6 +240,77 @@ export default function Dashboard() {
             </Card>
           ))}
         </div>
+
+        {/* All Projects Section */}
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-foreground">All Projects</CardTitle>
+              <CardDescription>Projects from workspaces you have access to</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/workspaces">View All Workspaces</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loadingProjects ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-3">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No projects found</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create a workspace and add projects to get started
+                </p>
+                <Button asChild>
+                  <Link to="/workspaces">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Workspace
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {projects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <FolderKanban className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{project.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {project.workspace_name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant={project.status === "active" ? "default" : "secondary"}
+                      >
+                        {project.status}
+                      </Badge>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
