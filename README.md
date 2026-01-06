@@ -7,6 +7,52 @@ A comprehensive, enterprise-grade Quality Assurance and Test Management platform
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC)
 ![Supabase](https://img.shields.io/badge/Supabase-Backend-green)
 
+---
+
+## 📸 Screenshots
+
+### Authentication
+Secure login and registration with a modern split-screen design.
+
+![Authentication](docs/screenshots/auth.png)
+
+### Dashboard
+Get a comprehensive overview of your testing activities, projects, and key metrics.
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Workspaces
+Organize your projects with multi-tenant workspace management.
+
+![Workspaces](docs/screenshots/workspaces.png)
+
+### Test Repository
+Centralized test case management with tags, priorities, and versioning.
+
+![Test Repository](docs/screenshots/test-repository.png)
+
+### Test Execution
+Run tests, track progress, and record results in real-time.
+
+![Test Execution](docs/screenshots/test-execution.png)
+
+### Defect Management
+Log, track, and manage bugs throughout their lifecycle.
+
+![Defects](docs/screenshots/defects.png)
+
+### Risk Assessment
+Identify, analyze, and mitigate project risks.
+
+![Risk Assessment](docs/screenshots/risk-assessment.png)
+
+### Reports & Analytics
+Generate comprehensive reports with visual charts and insights.
+
+![Reports](docs/screenshots/reports.png)
+
+---
+
 ## 🚀 Features
 
 ### 📊 Dashboard
@@ -15,12 +61,16 @@ A comprehensive, enterprise-grade Quality Assurance and Test Management platform
 - **Activity Feed**: Track recent test executions and defect updates
 - **Key Metrics**: Monitor pass rates, defect counts, and testing progress
 
+![Dashboard Preview](docs/screenshots/dashboard-detail.png)
+
 ### 🗂️ Test Repository
 - **Centralized Test Case Management**: Create, organize, and maintain test cases
 - **Tags & Categorization**: Organize tests with custom tags and priorities
 - **Test Case Versioning**: Track changes and maintain test case history
 - **Preconditions & Expected Results**: Define comprehensive test documentation
 - **Bulk Operations**: Import/export and bulk edit capabilities
+
+![Test Repository Preview](docs/screenshots/test-repository-detail.png)
 
 ### ▶️ Test Execution
 - **Test Runs**: Create and manage test execution cycles
@@ -29,6 +79,8 @@ A comprehensive, enterprise-grade Quality Assurance and Test Management platform
 - **Pass/Fail/Block Status**: Comprehensive execution status tracking
 - **Test Run History**: Review past executions and compare results
 
+![Test Execution Preview](docs/screenshots/test-execution-detail.png)
+
 ### 🐛 Defect Management
 - **Defect Tracking**: Log, track, and manage bugs and issues
 - **Severity Levels**: Categorize defects by severity (Critical, High, Medium, Low)
@@ -36,16 +88,22 @@ A comprehensive, enterprise-grade Quality Assurance and Test Management platform
 - **Assignment**: Assign defects to team members
 - **Linking**: Connect defects to specific test executions
 
+![Defects Preview](docs/screenshots/defects-detail.png)
+
 ### ⚠️ Risk Assessment
 - **Risk Identification**: Identify and document potential risks
 - **Risk Analysis**: Evaluate probability and impact
 - **Mitigation Planning**: Create and track mitigation strategies
 - **Risk Dashboard**: Visualize risk landscape across projects
 
+![Risk Assessment Preview](docs/screenshots/risk-assessment-detail.png)
+
 ### 🤖 AI Generation
 - **AI-Powered Test Cases**: Generate test cases using AI
 - **Smart Suggestions**: Get intelligent recommendations for test coverage
 - **Natural Language Processing**: Convert requirements to test cases
+
+![AI Generation Preview](docs/screenshots/ai-generation.png)
 
 ### 📈 Reports & Analytics
 
@@ -79,12 +137,16 @@ A comprehensive, enterprise-grade Quality Assurance and Test Management platform
 - Data export capabilities
 - Scheduled reports
 
+![Reports Preview](docs/screenshots/reports-detail.png)
+
 ### 👥 Workspace & Team Management
 
 #### Workspaces
 - **Multi-Workspace Support**: Organize projects by team, department, or client
 - **Workspace Settings**: Configure workspace-specific settings
 - **Member Management**: Invite and manage team members
+
+![Workspaces Preview](docs/screenshots/workspaces-detail.png)
 
 #### Role-Based Access Control (RBAC)
 Four distinct roles with granular permissions:
@@ -96,11 +158,15 @@ Four distinct roles with granular permissions:
 | **Tester** | Execute tests, log defects, view assigned work |
 | **Viewer** | Read-only access to projects and reports |
 
+![RBAC Preview](docs/screenshots/rbac.png)
+
 ### 🔐 Authentication & Security
 - **Secure Authentication**: Email/password authentication
 - **Session Management**: Secure session handling
 - **Row-Level Security**: Data isolation between workspaces
 - **Protected Routes**: Route-level access control
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -114,6 +180,8 @@ Four distinct roles with granular permissions:
 | **Charts** | Recharts |
 | **Forms** | React Hook Form + Zod |
 | **Build Tool** | Vite |
+
+---
 
 ## 📁 Project Structure
 
@@ -142,7 +210,12 @@ src/
 │   └── WorkspaceMembers.tsx
 ├── types/               # TypeScript type definitions
 └── lib/                 # Utility functions
+
+docs/
+└── screenshots/         # Feature screenshots for documentation
 ```
+
+---
 
 ## 🚀 Getting Started
 
@@ -171,6 +244,8 @@ src/
 4. **Open your browser**
    Navigate to `http://localhost:5173`
 
+---
+
 ## 📝 Environment Variables
 
 The project uses the following environment variables (auto-configured with Lovable Cloud):
@@ -179,6 +254,8 @@ The project uses the following environment variables (auto-configured with Lovab
 VITE_SUPABASE_URL=<your-supabase-url>
 VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
 ```
+
+---
 
 ## 🗄️ Database Schema
 
@@ -194,6 +271,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
 - **defects** - Bug/defect tracking
 - **reports** - Saved report configurations
 
+---
+
 ## 🔒 Security Features
 
 - **Row-Level Security (RLS)**: All tables protected with RLS policies
@@ -201,9 +280,40 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
 - **Role-Based Permissions**: Granular access control at the application level
 - **Secure Authentication**: Supabase Auth with secure session management
 
+---
+
+## 📸 Adding Your Own Screenshots
+
+To add screenshots to this README:
+
+1. Create a `docs/screenshots/` directory in your project root
+2. Take screenshots of each feature from your running application
+3. Save them with the following names:
+   - `auth.png` - Login/Register page
+   - `dashboard.png` - Main dashboard
+   - `dashboard-detail.png` - Dashboard with data
+   - `workspaces.png` - Workspaces list
+   - `workspaces-detail.png` - Workspace with projects
+   - `test-repository.png` - Test case list
+   - `test-repository-detail.png` - Test case details
+   - `test-execution.png` - Test run execution
+   - `test-execution-detail.png` - Execution in progress
+   - `defects.png` - Defects list
+   - `defects-detail.png` - Defect details
+   - `risk-assessment.png` - Risk assessment page
+   - `risk-assessment-detail.png` - Risk details
+   - `ai-generation.png` - AI test generation
+   - `reports.png` - Reports overview
+   - `reports-detail.png` - Report with charts
+   - `rbac.png` - Role management
+
+---
+
 ## 📄 License
 
 This project is proprietary software. All rights reserved.
+
+---
 
 ## 🤝 Support
 
