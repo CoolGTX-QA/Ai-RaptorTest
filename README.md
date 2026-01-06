@@ -1,73 +1,214 @@
-# Welcome to your Lovable project
+# QA Test Management Platform
 
-## Project info
+A comprehensive, enterprise-grade Quality Assurance and Test Management platform built with modern web technologies. Streamline your testing workflows, track defects, manage test cases, and generate insightful reports—all in one place.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![Built with React](https://img.shields.io/badge/React-18.3-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-green)
 
-## How can I edit this code?
+## 🚀 Features
 
-There are several ways of editing your application.
+### 📊 Dashboard
+- **Overview Analytics**: Get a bird's-eye view of your testing activities
+- **Project Summary**: Quick access to all projects across your workspaces
+- **Activity Feed**: Track recent test executions and defect updates
+- **Key Metrics**: Monitor pass rates, defect counts, and testing progress
 
-**Use Lovable**
+### 🗂️ Test Repository
+- **Centralized Test Case Management**: Create, organize, and maintain test cases
+- **Tags & Categorization**: Organize tests with custom tags and priorities
+- **Test Case Versioning**: Track changes and maintain test case history
+- **Preconditions & Expected Results**: Define comprehensive test documentation
+- **Bulk Operations**: Import/export and bulk edit capabilities
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### ▶️ Test Execution
+- **Test Runs**: Create and manage test execution cycles
+- **Real-time Status Tracking**: Monitor test progress as it happens
+- **Execution Notes**: Add detailed notes and observations during testing
+- **Pass/Fail/Block Status**: Comprehensive execution status tracking
+- **Test Run History**: Review past executions and compare results
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🐛 Defect Management
+- **Defect Tracking**: Log, track, and manage bugs and issues
+- **Severity Levels**: Categorize defects by severity (Critical, High, Medium, Low)
+- **Status Workflow**: Track defects through their lifecycle (Open, In Progress, Resolved, Closed)
+- **Assignment**: Assign defects to team members
+- **Linking**: Connect defects to specific test executions
 
-**Use your preferred IDE**
+### ⚠️ Risk Assessment
+- **Risk Identification**: Identify and document potential risks
+- **Risk Analysis**: Evaluate probability and impact
+- **Mitigation Planning**: Create and track mitigation strategies
+- **Risk Dashboard**: Visualize risk landscape across projects
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🤖 AI Generation
+- **AI-Powered Test Cases**: Generate test cases using AI
+- **Smart Suggestions**: Get intelligent recommendations for test coverage
+- **Natural Language Processing**: Convert requirements to test cases
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 📈 Reports & Analytics
 
-Follow these steps:
+#### Test Execution Report
+- Detailed test execution statistics
+- Pass/fail trends over time
+- Execution time analysis
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+#### Defect Leakage Report
+- Track defects that escaped to production
+- Analyze escape patterns
+- Identify process gaps
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+#### Root Cause Analysis (RCA) Report
+- Defect categorization by root cause
+- Trend analysis
+- Preventive action tracking
 
-# Step 3: Install the necessary dependencies.
-npm i
+#### Requirement Traceability Matrix
+- Map requirements to test cases
+- Coverage analysis
+- Gap identification
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+#### Test Analytics Report
+- Comprehensive testing metrics
+- Trend charts and visualizations
+- Team performance insights
+
+#### Advanced Reports
+- Custom report builder
+- Data export capabilities
+- Scheduled reports
+
+### 👥 Workspace & Team Management
+
+#### Workspaces
+- **Multi-Workspace Support**: Organize projects by team, department, or client
+- **Workspace Settings**: Configure workspace-specific settings
+- **Member Management**: Invite and manage team members
+
+#### Role-Based Access Control (RBAC)
+Four distinct roles with granular permissions:
+
+| Role | Permissions |
+|------|-------------|
+| **Admin** | Full access - manage workspace, members, settings, and all features |
+| **Manager** | Create/manage projects, test runs, assign work, view all reports |
+| **Tester** | Execute tests, log defects, view assigned work |
+| **Viewer** | Read-only access to projects and reports |
+
+### 🔐 Authentication & Security
+- **Secure Authentication**: Email/password authentication
+- **Session Management**: Secure session handling
+- **Row-Level Security**: Data isolation between workspaces
+- **Protected Routes**: Route-level access control
+
+## 🛠️ Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| **Frontend** | React 18, TypeScript |
+| **Styling** | Tailwind CSS, shadcn/ui |
+| **State Management** | TanStack React Query |
+| **Routing** | React Router v6 |
+| **Backend** | Supabase (PostgreSQL, Auth, Edge Functions) |
+| **Charts** | Recharts |
+| **Forms** | React Hook Form + Zod |
+| **Build Tool** | Vite |
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── layout/          # Layout components (AppLayout, AppSidebar)
+│   ├── reports/         # Report-specific components
+│   └── ui/              # shadcn/ui components
+├── hooks/
+│   ├── useAuth.tsx      # Authentication hook
+│   ├── useRBAC.tsx      # Role-based access control hook
+│   └── use-toast.ts     # Toast notifications
+├── integrations/
+│   └── supabase/        # Supabase client & types
+├── pages/
+│   ├── reports/         # Report pages
+│   ├── Auth.tsx         # Authentication page
+│   ├── Dashboard.tsx    # Main dashboard
+│   ├── Defects.tsx      # Defect management
+│   ├── TestExecution.tsx
+│   ├── TestRepository.tsx
+│   ├── RiskAssessment.tsx
+│   ├── AIGeneration.tsx
+│   ├── Workspaces.tsx
+│   └── WorkspaceMembers.tsx
+├── types/               # TypeScript type definitions
+└── lib/                 # Utility functions
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Getting Started
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Prerequisites
+- Node.js 18+ 
+- npm or bun
 
-**Use GitHub Codespaces**
+### Installation
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd <project-name>
+   ```
 
-## What technologies are used for this project?
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-This project is built with:
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+4. **Open your browser**
+   Navigate to `http://localhost:5173`
 
-## How can I deploy this project?
+## 📝 Environment Variables
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+The project uses the following environment variables (auto-configured with Lovable Cloud):
 
-## Can I connect a custom domain to my Lovable project?
+```env
+VITE_SUPABASE_URL=<your-supabase-url>
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-key>
+```
 
-Yes, you can!
+## 🗄️ Database Schema
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Core Tables
+- **workspaces** - Multi-tenant workspace management
+- **workspace_members** - User-workspace associations with roles
+- **workspace_invites** - Pending invitations
+- **projects** - Projects within workspaces
+- **profiles** - User profile information
+- **test_cases** - Test case definitions
+- **test_runs** - Test execution cycles
+- **test_executions** - Individual test execution records
+- **defects** - Bug/defect tracking
+- **reports** - Saved report configurations
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🔒 Security Features
+
+- **Row-Level Security (RLS)**: All tables protected with RLS policies
+- **Workspace Isolation**: Users can only access their workspace data
+- **Role-Based Permissions**: Granular access control at the application level
+- **Secure Authentication**: Supabase Auth with secure session management
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 🤝 Support
+
+For support and questions, please contact your system administrator.
+
+---
+
+Built with ❤️ using [Lovable](https://lovable.dev)
