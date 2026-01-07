@@ -218,41 +218,62 @@ export default function Auth() {
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/80" />
         
-        {/* Animated background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-40 h-40 border border-primary-foreground/30 rounded-full animate-pulse" />
-          <div className="absolute top-40 right-20 w-60 h-60 border border-primary-foreground/20 rounded-full animate-pulse delay-500" />
-          <div className="absolute bottom-20 left-1/4 w-32 h-32 border border-primary-foreground/25 rounded-full animate-pulse delay-1000" />
-        </div>
-        
-        {/* Floating TMT icons - Corners only to avoid overlap */}
-        {/* Top-right corner */}
-        <div className="absolute top-6 right-6 animate-bounce delay-300 z-20">
-          <div className="w-11 h-11 rounded-xl bg-primary-foreground/15 backdrop-blur-sm border border-primary-foreground/20 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-primary-foreground/80" />
+        {/* Animated floating orbs */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Large glowing orb - top left */}
+          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-gradient-to-br from-primary-foreground/20 to-transparent blur-3xl animate-pulse" />
+          
+          {/* Medium orb - bottom right */}
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-gradient-to-tl from-primary-foreground/15 to-transparent blur-3xl animate-pulse delay-1000" />
+          
+          {/* Small floating orbs with custom animation */}
+          <div className="absolute top-[15%] right-[10%] w-4 h-4 rounded-full bg-primary-foreground/40 shadow-lg shadow-primary-foreground/20" 
+               style={{ animation: 'float 6s ease-in-out infinite' }} />
+          <div className="absolute top-[25%] left-[8%] w-3 h-3 rounded-full bg-primary-foreground/30" 
+               style={{ animation: 'float 8s ease-in-out infinite 1s' }} />
+          <div className="absolute bottom-[30%] right-[15%] w-5 h-5 rounded-full bg-primary-foreground/35" 
+               style={{ animation: 'float 7s ease-in-out infinite 2s' }} />
+          <div className="absolute bottom-[20%] left-[12%] w-2 h-2 rounded-full bg-primary-foreground/45" 
+               style={{ animation: 'float 5s ease-in-out infinite 0.5s' }} />
+          <div className="absolute top-[60%] right-[8%] w-3 h-3 rounded-full bg-primary-foreground/25" 
+               style={{ animation: 'float 9s ease-in-out infinite 3s' }} />
+          
+          {/* Geometric accent lines */}
+          <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="white" stopOpacity="0" />
+                <stop offset="50%" stopColor="white" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="white" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <line x1="0" y1="30%" x2="40%" y2="0" stroke="url(#lineGrad)" strokeWidth="1" />
+            <line x1="60%" y1="100%" x2="100%" y2="70%" stroke="url(#lineGrad)" strokeWidth="1" />
+            <line x1="100%" y1="20%" x2="70%" y2="50%" stroke="url(#lineGrad)" strokeWidth="1" />
+          </svg>
+          
+          {/* Hexagon grid pattern - subtle */}
+          <div className="absolute top-10 right-10 opacity-10">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <polygon points="60,5 110,30 110,80 60,105 10,80 10,30" fill="none" stroke="white" strokeWidth="1" />
+              <polygon points="60,20 95,37 95,73 60,90 25,73 25,37" fill="none" stroke="white" strokeWidth="0.5" />
+            </svg>
+          </div>
+          <div className="absolute bottom-16 left-8 opacity-10">
+            <svg width="80" height="80" viewBox="0 0 120 120">
+              <polygon points="60,5 110,30 110,80 60,105 10,80 10,30" fill="none" stroke="white" strokeWidth="1" />
+            </svg>
           </div>
         </div>
         
-        {/* Bottom-right corner */}
-        <div className="absolute bottom-6 right-6 animate-bounce delay-700 z-20">
-          <div className="w-11 h-11 rounded-xl bg-primary-foreground/15 backdrop-blur-sm border border-primary-foreground/20 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-primary-foreground/80" />
-          </div>
-        </div>
-        
-        {/* Bottom-left corner */}
-        <div className="absolute bottom-6 left-6 animate-bounce delay-500 z-20">
-          <div className="w-11 h-11 rounded-xl bg-primary-foreground/15 backdrop-blur-sm border border-primary-foreground/20 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground/80" />
-          </div>
-        </div>
-        
-        {/* Top-left corner */}
-        <div className="absolute top-6 left-6 animate-bounce z-20">
-          <div className="w-11 h-11 rounded-xl bg-primary-foreground/15 backdrop-blur-sm border border-primary-foreground/20 flex items-center justify-center">
-            <Bug className="w-5 h-5 text-primary-foreground/80" />
-          </div>
-        </div>
+        <style>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-10px) translateX(-10px); }
+            75% { transform: translateY(-25px) translateX(5px); }
+          }
+        `}</style>
 
         {/* Glossy glass panel */}
         <div className="absolute inset-0 flex items-center justify-center p-12">
