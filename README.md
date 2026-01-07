@@ -264,7 +264,7 @@ This project is proprietary software. All rights reserved.
 
 ## 🤝 Support
 
-For support and questions, please contact your system administrator.
+For support and questions, please contact me at kuljeetsingh7896@gmail.com.
 
 ---
 
