@@ -81,18 +81,47 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 relative z-10">
           <div className="flex flex-col items-center text-center">
             {/* Glossy Logo */}
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6 group">
               <div className="relative">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 shadow-lg shadow-primary/30">
-                  <Layers className="h-8 w-8 text-primary-foreground drop-shadow-sm" />
+                {/* Outer glow */}
+                <div className="absolute -inset-2 bg-primary/30 rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                {/* Logo container with glossy effect */}
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80 shadow-xl shadow-primary/40 overflow-hidden">
+                  <Layers className="h-8 w-8 text-primary-foreground drop-shadow-md relative z-10" />
+                  
+                  {/* Glossy shine overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent pointer-events-none" />
+                  
+                  {/* Animated shine sweep */}
+                  <div 
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 45%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.5) 55%, transparent 60%)',
+                      backgroundSize: '200% 100%',
+                      animation: 'logoShine 3s ease-in-out infinite',
+                    }}
+                  />
                 </div>
-                {/* Glossy shine effect */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/30 to-transparent pointer-events-none" />
               </div>
-              <span className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              
+              {/* Text with glow effect */}
+              <span 
+                className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent relative"
+                style={{
+                  textShadow: '0 0 30px hsl(var(--primary) / 0.3)',
+                }}
+              >
                 RaptorTest
               </span>
             </div>
+            
+            <style>{`
+              @keyframes logoShine {
+                0%, 100% { background-position: 200% 0; }
+                50% { background-position: -200% 0; }
+              }
+            `}</style>
             <h1 className="text-2xl font-semibold text-foreground">Welcome to RaptorTest</h1>
             <p className="text-muted-foreground mt-2">
               Enter your credentials to access your account
