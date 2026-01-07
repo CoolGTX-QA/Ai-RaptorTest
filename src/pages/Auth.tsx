@@ -260,7 +260,27 @@ export default function Auth() {
             {/* Glowing backdrop */}
             <div className="absolute -inset-4 bg-primary-foreground/5 rounded-3xl blur-xl" />
             
-            <div className="relative bg-primary-foreground/10 backdrop-blur-md rounded-2xl p-8 border border-primary-foreground/20">
+            <div className="relative bg-primary-foreground/10 backdrop-blur-md rounded-2xl p-8 border border-primary-foreground/20 overflow-hidden">
+              {/* Animated glossy border shine */}
+              <div 
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 3s ease-in-out infinite',
+                  maskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  maskComposite: 'xor',
+                  WebkitMaskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  WebkitMaskComposite: 'xor',
+                  padding: '1px',
+                }}
+              />
+              <style>{`
+                @keyframes shimmer {
+                  0% { background-position: 200% 0; }
+                  100% { background-position: -200% 0; }
+                }
+              `}</style>
               {/* Top glossy shine */}
               <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary-foreground/40 to-transparent" />
               
