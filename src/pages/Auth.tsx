@@ -225,20 +225,32 @@ export default function Auth() {
           <div className="absolute bottom-20 left-1/4 w-32 h-32 border border-primary-foreground/25 rounded-full animate-pulse delay-1000" />
         </div>
         
-        {/* Floating TMT icons */}
-        <div className="absolute top-20 right-10 animate-bounce delay-300">
-          <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-            <Bug className="w-6 h-6 text-primary-foreground/70" />
+        {/* Floating TMT icons - Left side */}
+        <div className="absolute top-24 left-8 animate-bounce z-20">
+          <div className="w-16 h-16 rounded-2xl bg-primary-foreground/20 backdrop-blur-md border border-primary-foreground/30 flex items-center justify-center shadow-xl">
+            <Bug className="w-8 h-8 text-primary-foreground" />
           </div>
         </div>
-        <div className="absolute bottom-32 right-24 animate-bounce delay-700">
-          <div className="w-10 h-10 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground/70" />
+        <div className="absolute bottom-40 left-12 animate-bounce delay-500 z-20">
+          <div className="w-14 h-14 rounded-xl bg-primary-foreground/20 backdrop-blur-md border border-primary-foreground/30 flex items-center justify-center shadow-xl">
+            <Shield className="w-7 h-7 text-primary-foreground" />
           </div>
         </div>
-        <div className="absolute top-1/3 right-32 animate-bounce">
-          <div className="w-14 h-14 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-            <Zap className="w-7 h-7 text-primary-foreground/70" />
+        <div className="absolute top-1/2 left-6 animate-bounce delay-1000 z-20">
+          <div className="w-12 h-12 rounded-lg bg-primary-foreground/20 backdrop-blur-md border border-primary-foreground/30 flex items-center justify-center shadow-xl">
+            <Zap className="w-6 h-6 text-primary-foreground" />
+          </div>
+        </div>
+        
+        {/* Floating TMT icons - Right side */}
+        <div className="absolute top-16 right-6 animate-bounce delay-300 z-20">
+          <div className="w-14 h-14 rounded-xl bg-primary-foreground/20 backdrop-blur-md border border-primary-foreground/30 flex items-center justify-center shadow-xl">
+            <CheckCircle className="w-7 h-7 text-primary-foreground" />
+          </div>
+        </div>
+        <div className="absolute bottom-24 right-10 animate-bounce delay-700 z-20">
+          <div className="w-12 h-12 rounded-lg bg-primary-foreground/20 backdrop-blur-md border border-primary-foreground/30 flex items-center justify-center shadow-xl">
+            <BarChart3 className="w-6 h-6 text-primary-foreground" />
           </div>
         </div>
 
