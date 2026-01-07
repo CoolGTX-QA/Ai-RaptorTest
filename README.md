@@ -15,7 +15,8 @@ A comprehensive, enterprise-grade Quality Assurance and Test Management platform
 Secure login and registration with a modern split-screen design.
 
 <!-- Replace with your screenshot URL -->
-<img width="1908" height="867" alt="image" src="https://github.com/user-attachments/assets/27d056ee-6515-4992-9ffa-f8cc438ecba8" />
+<img width="1329" height="595" alt="image" src="https://github.com/user-attachments/assets/a3664aa8-36bf-462d-9912-5072ef0defbf" />
+
 
 
 ---
