@@ -120,18 +120,21 @@ AI-powered test case generation and smart suggestions.
 
 ### 📈 Reports & Analytics
 Generate comprehensive reports with visual charts and insights.
-
-| Report | Description |
-|--------|-------------|
-| **Test Execution Report** | Detailed statistics, pass/fail trends, execution time analysis |
-| **Defect Leakage Report** | Track defects escaped to production, analyze patterns |
-| **RCA Report** | Root cause analysis, categorization, trend analysis |
-| **Traceability Matrix** | Map requirements to test cases, coverage analysis |
-| **Test Analytics** | Comprehensive metrics, trend charts, team insights |
-| **Advanced Reports** | Custom report builder, data export, scheduled reports |
-
 <!-- Replace with your screenshot URL -->
 <img width="1892" height="861" alt="image" src="https://github.com/user-attachments/assets/5918c1f6-a5b0-4a52-a98f-9e2c358aa25e" />
+
+| Report | Description | Screenshot
+|--------|-------------|-------------|
+| **Test Execution Report** | Detailed statistics, pass/fail trends, execution time analysis |<img width="1920" height="1582" alt="image" src="https://github.com/user-attachments/assets/be27fcbd-6760-48ae-bd6d-e93e3a91a7a0" />|
+| **Test Analytics** | Comprehensive metrics, trend charts, team insights |<img width="1920" height="1558" alt="image" src="https://github.com/user-attachments/assets/355a65d0-e11c-43b1-ae0c-c076af20e6da" /> |
+| **Defect Leakage Report** | Track defects escaped to production, analyze patterns |<img width="1920" height="1558" alt="image" src="https://github.com/user-attachments/assets/c93d0211-eb2d-4a52-b312-c26814f09818" />|
+| **RCA Report** | Root cause analysis, categorization, trend analysis |<img width="1920" height="1582" alt="image" src="https://github.com/user-attachments/assets/ee5140be-6216-43c6-aa65-0344a7e69aa4" />|
+| **Traceability Matrix** | Map requirements to test cases, coverage analysis |<img width="1920" height="1787" alt="image" src="https://github.com/user-attachments/assets/ae0af202-db57-4262-a864-245ec898028f" />|
+| **Test Analytics** | Comprehensive metrics, trend charts, team insights |<img width="1920" height="1558" alt="image" src="https://github.com/user-attachments/assets/355a65d0-e11c-43b1-ae0c-c076af20e6da" /> |
+| **Advanced Reports** | Custom report builder, data export, scheduled reports |<img width="1920" height="1632" alt="image" src="https://github.com/user-attachments/assets/31aaf0fc-ace1-49f1-b35f-6b04665a5be5" />|
+
+
+
 
 
 ---
