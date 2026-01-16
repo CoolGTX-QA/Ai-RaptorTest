@@ -272,4 +272,4 @@ For support and questions, please contact me at kuljeetsingh7896@gmail.com.
 
 ---
 
-Built with ❤️ Kuljeet using [Lovable](https://lovable.dev)
+Built with ❤️ By Kuljeet using [Lovable](https://lovable.dev)
