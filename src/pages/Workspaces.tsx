@@ -131,11 +131,11 @@ export default function Workspaces() {
     try {
       setCreating(true);
       
-      const { error } = await supabase.from("workspaces").insert({
+      const { data, error } = await supabase.from("workspaces").insert({
         name: newWorkspace.name.trim(),
         description: newWorkspace.description.trim() || null,
         created_by: user.id,
-      });
+      }).select().single();
 
       if (error) throw error;
 
@@ -146,8 +146,13 @@ export default function Workspaces() {
 
       setNewWorkspace({ name: "", description: "" });
       setCreateDialogOpen(false);
-      fetchWorkspaces();
+      
+      // Wait a bit for the trigger to add the user as admin, then fetch
+      setTimeout(() => {
+        fetchWorkspaces();
+      }, 500);
     } catch (error: any) {
+      console.error("Error creating workspace:", error);
       toast({
         title: "Error creating workspace",
         description: error.message,
@@ -278,12 +283,12 @@ export default function Workspaces() {
                       <span>{workspace.project_count} projects</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <RoleBadge role={(workspace.role || "viewer") as AppRole} />
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/workspaces/${workspace.id}/members`)}>
-                      Open
-                    </Button>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <RoleBadge role={(workspace.role || "viewer") as AppRole} />
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/workspaces/${workspace.id}`)}>
+                        Open
+                      </Button>
+                    </div>
                 </CardContent>
               </Card>
             ))}
