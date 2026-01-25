@@ -131,11 +131,14 @@ export default function Workspaces() {
     try {
       setCreating(true);
       
-      const { data, error } = await supabase.from("workspaces").insert({
+      // Don't use .select() here because the RLS policy for SELECT requires
+      // the user to be a workspace member, but the trigger that adds them 
+      // runs AFTER the insert completes
+      const { error } = await supabase.from("workspaces").insert({
         name: newWorkspace.name.trim(),
         description: newWorkspace.description.trim() || null,
         created_by: user.id,
-      }).select().single();
+      });
 
       if (error) throw error;
 
