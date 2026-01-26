@@ -8,8 +8,18 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schemas
+const emailSchema = z.string().trim().email("Please enter a valid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const fullNameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
 
 export default function Auth() {
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,9 +36,23 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate inputs
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toast({ title: "Invalid email", description: emailResult.error.errors[0].message, variant: "destructive" });
+      return;
+    }
+    
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      toast({ title: "Invalid password", description: passwordResult.error.errors[0].message, variant: "destructive" });
+      return;
+    }
+    
     setIsLoading(true);
     
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(emailResult.data, password);
     
     setIsLoading(false);
     
@@ -47,11 +71,66 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailResult = emailSchema.safeParse(resetEmail);
+    if (!emailResult.success) {
+      toast({ title: "Invalid email", description: emailResult.error.errors[0].message, variant: "destructive" });
+      return;
+    }
+    
+    setResetLoading(true);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(emailResult.data, {
+      redirectTo: `${window.location.origin}/`,
+    });
+    
+    setResetLoading(false);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Check your email",
+        description: "We've sent you a password reset link.",
+      });
+      setShowForgotPassword(false);
+      setResetEmail("");
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate inputs
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toast({ title: "Invalid email", description: emailResult.error.errors[0].message, variant: "destructive" });
+      return;
+    }
+    
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      toast({ title: "Invalid password", description: passwordResult.error.errors[0].message, variant: "destructive" });
+      return;
+    }
+    
+    if (fullName) {
+      const nameResult = fullNameSchema.safeParse(fullName);
+      if (!nameResult.success) {
+        toast({ title: "Invalid name", description: nameResult.error.errors[0].message, variant: "destructive" });
+        return;
+      }
+    }
+    
     setIsLoading(true);
     
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(emailResult.data, password, fullName || undefined);
     
     setIsLoading(false);
     
@@ -183,6 +262,14 @@ export default function Auth() {
                     >
                       {isLoading ? "Signing in..." : "Login"}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="w-full text-primary hover:text-primary/80"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Forgot password?
+                    </Button>
                   </form>
                 </TabsContent>
 
@@ -239,6 +326,56 @@ export default function Auth() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Forgot Password Modal */}
+          {showForgotPassword && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+              <Card className="w-full max-w-md border-border/50 shadow-2xl backdrop-blur-sm bg-card/90">
+                <CardHeader className="text-center">
+                  <h2 className="text-xl font-semibold text-foreground">Reset Password</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your email and we'll send you a reset link
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email" className="text-foreground font-medium">Email</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        required
+                        className="bg-background/50 border-border/50 focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setShowForgotPassword(false);
+                          setResetEmail("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1 bg-gradient-to-r from-primary to-primary/90"
+                        disabled={resetLoading}
+                      >
+                        {resetLoading ? "Sending..." : "Send Reset Link"}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
 
