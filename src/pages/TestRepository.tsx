@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -47,6 +46,7 @@ import {
   FileText,
   ChevronRight,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -57,6 +57,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { BulkImportDialog } from "@/components/test-cases/BulkImportDialog";
 
 const folders = [
   { name: "All Tests", count: 20 },
@@ -134,6 +135,7 @@ export default function TestRepository() {
   const [selectedFolder, setSelectedFolder] = useState("All Tests");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [testCases, setTestCases] = useState(initialTestCases);
   const { toast } = useToast();
 
@@ -155,6 +157,28 @@ export default function TestRepository() {
       title: "Test case created",
       description: `"${newTestCase.name}" has been created successfully.`,
     });
+  };
+
+  const handleBulkImport = async (importedCases: Array<{
+    title: string;
+    description: string;
+    priority: string;
+    status: string;
+    preconditions: string;
+    expected_result: string;
+    tags: string[];
+  }>) => {
+    const newTestCases = importedCases.map((tc, index) => ({
+      id: `TR-${testCases.length + index + 1}`,
+      name: tc.title,
+      priority: tc.priority,
+      status: tc.status,
+      type: "functional",
+      createdBy: "Demo User",
+      updatedAt: "Just now",
+    }));
+
+    setTestCases([...newTestCases, ...testCases]);
   };
 
   const filteredTestCases = testCases.filter((tc) =>
@@ -187,6 +211,10 @@ export default function TestRepository() {
                 <Sparkles className="mr-2 h-4 w-4" />
                 AI Generate
               </Link>
+            </Button>
+            <Button variant="outline" onClick={() => setIsBulkImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
             </Button>
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
@@ -297,6 +325,13 @@ export default function TestRepository() {
             </Dialog>
           </div>
         </div>
+
+        {/* Bulk Import Dialog */}
+        <BulkImportDialog
+          open={isBulkImportOpen}
+          onOpenChange={setIsBulkImportOpen}
+          onImport={handleBulkImport}
+        />
 
         {/* Content */}
         <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
