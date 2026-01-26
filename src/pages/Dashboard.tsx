@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Layers,
   FolderKanban,
@@ -16,7 +17,7 @@ import {
   Play,
   BarChart3,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   PieChart,
   Pie,
@@ -142,6 +143,7 @@ const quickLinks = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
 
@@ -250,9 +252,14 @@ export default function Dashboard() {
               <CardTitle className="text-foreground">All Projects</CardTitle>
               <CardDescription>Projects from workspaces you have access to</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/workspaces">View All Workspaces</Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/projects">View All Projects</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/workspaces">Workspaces</Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingProjects ? (
@@ -282,37 +289,40 @@ export default function Dashboard() {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-2">
-                {projects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10 rounded-lg">
-                        <AvatarImage src={project.logo_url || undefined} alt={project.name} />
-                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                          {project.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground">{project.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {project.workspace_name}
-                        </p>
+              <ScrollArea className="h-[280px]">
+                <div className="space-y-2 pr-4">
+                  {projects.slice(0, 10).map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
+                      className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-10 w-10 rounded-lg">
+                          <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                          <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                            {project.name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-foreground">{project.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {project.workspace_name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant={project.status === "active" ? "default" : "secondary"}
+                        >
+                          {project.status}
+                        </Badge>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant={project.status === "active" ? "default" : "secondary"}
-                      >
-                        {project.status}
-                      </Badge>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
