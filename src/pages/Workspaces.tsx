@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ImageUpload } from "@/components/ImageUpload";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +42,7 @@ interface Workspace {
   id: string;
   name: string;
   description: string | null;
+  icon_url: string | null;
   created_at: string;
   created_by: string;
   member_count?: number;
@@ -55,7 +58,7 @@ export default function Workspaces() {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newWorkspace, setNewWorkspace] = useState({ name: "", description: "" });
+  const [newWorkspace, setNewWorkspace] = useState({ name: "", description: "", icon_url: "" });
 
   useEffect(() => {
     fetchWorkspaces();
@@ -137,6 +140,7 @@ export default function Workspaces() {
       const { error } = await supabase.from("workspaces").insert({
         name: newWorkspace.name.trim(),
         description: newWorkspace.description.trim() || null,
+        icon_url: newWorkspace.icon_url || null,
         created_by: user.id,
       });
 
@@ -147,7 +151,7 @@ export default function Workspaces() {
         description: `"${newWorkspace.name.trim()}" has been created successfully.`,
       });
 
-      setNewWorkspace({ name: "", description: "" });
+      setNewWorkspace({ name: "", description: "", icon_url: "" });
       setCreateDialogOpen(false);
       
       // Wait a bit for the trigger to add the user as admin, then fetch
@@ -193,6 +197,18 @@ export default function Workspaces() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Workspace Icon (optional)</Label>
+                  <ImageUpload
+                    bucket="workspace-icons"
+                    currentImageUrl={newWorkspace.icon_url || null}
+                    onImageUploaded={(url) => setNewWorkspace({ ...newWorkspace, icon_url: url })}
+                    onImageRemoved={() => setNewWorkspace({ ...newWorkspace, icon_url: "" })}
+                    folder={user?.id}
+                    placeholder="W"
+                    shape="rounded"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Workspace Name</Label>
                   <Input
@@ -249,13 +265,21 @@ export default function Workspaces() {
             {workspaces.map((workspace) => (
               <Card key={workspace.id} className="border-border hover:border-primary/50 transition-colors">
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg text-foreground">{workspace.name}</CardTitle>
-                    {workspace.description && (
-                      <CardDescription className="line-clamp-2">
-                        {workspace.description}
-                      </CardDescription>
-                    )}
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-10 w-10 rounded-lg">
+                      <AvatarImage src={workspace.icon_url || undefined} alt={workspace.name} />
+                      <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                        {workspace.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg text-foreground">{workspace.name}</CardTitle>
+                      {workspace.description && (
+                        <CardDescription className="line-clamp-2">
+                          {workspace.description}
+                        </CardDescription>
+                      )}
+                    </div>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

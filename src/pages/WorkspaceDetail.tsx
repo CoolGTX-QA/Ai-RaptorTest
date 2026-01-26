@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ImageUpload } from "@/components/ImageUpload";
 import {
   Card,
   CardContent,
@@ -38,7 +40,6 @@ import {
   Plus,
   FolderKanban,
   Users,
-  Settings,
   MoreVertical,
   Loader2,
   Trash2,
@@ -48,6 +49,7 @@ interface Workspace {
   id: string;
   name: string;
   description: string | null;
+  icon_url: string | null;
   created_at: string;
 }
 
@@ -55,6 +57,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  logo_url: string | null;
   status: string;
   created_at: string;
   created_by: string;
@@ -72,7 +75,7 @@ export default function WorkspaceDetail() {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newProject, setNewProject] = useState({ name: "", description: "" });
+  const [newProject, setNewProject] = useState({ name: "", description: "", logo_url: "" });
   const [memberCount, setMemberCount] = useState(0);
 
   useEffect(() => {
@@ -145,6 +148,7 @@ export default function WorkspaceDetail() {
       const { error } = await supabase.from("projects").insert({
         name: newProject.name.trim(),
         description: newProject.description.trim() || null,
+        logo_url: newProject.logo_url || null,
         workspace_id: workspaceId,
         created_by: user.id,
         status: "active",
@@ -157,7 +161,7 @@ export default function WorkspaceDetail() {
         description: `"${newProject.name.trim()}" has been created successfully.`,
       });
 
-      setNewProject({ name: "", description: "" });
+      setNewProject({ name: "", description: "", logo_url: "" });
       setCreateDialogOpen(false);
       fetchWorkspaceData();
     } catch (error: any) {
@@ -276,6 +280,18 @@ export default function WorkspaceDetail() {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
+                      <Label>Project Logo (optional)</Label>
+                      <ImageUpload
+                        bucket="project-logos"
+                        currentImageUrl={newProject.logo_url || null}
+                        onImageUploaded={(url) => setNewProject({ ...newProject, logo_url: url })}
+                        onImageRemoved={() => setNewProject({ ...newProject, logo_url: "" })}
+                        folder={workspaceId}
+                        placeholder="P"
+                        shape="rounded"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="project-name">Project Name</Label>
                       <Input
                         id="project-name"
@@ -355,15 +371,23 @@ export default function WorkspaceDetail() {
                   className="border-border hover:border-primary/50 transition-colors"
                 >
                   <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div className="space-y-1 flex-1">
-                      <CardTitle className="text-lg text-foreground">
-                        {project.name}
-                      </CardTitle>
-                      {project.description && (
-                        <CardDescription className="line-clamp-2">
-                          {project.description}
-                        </CardDescription>
-                      )}
+                    <div className="flex items-start gap-3 flex-1">
+                      <Avatar className="h-10 w-10 rounded-lg">
+                        <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                          {project.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1 flex-1">
+                        <CardTitle className="text-lg text-foreground">
+                          {project.name}
+                        </CardTitle>
+                        {project.description && (
+                          <CardDescription className="line-clamp-2">
+                            {project.description}
+                          </CardDescription>
+                        )}
+                      </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
