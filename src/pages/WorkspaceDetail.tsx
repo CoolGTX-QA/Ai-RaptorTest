@@ -13,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageUpload } from "@/components/ImageUpload";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { RoleBadge } from "@/components/RoleBadge";
+import { AppRole } from "@/hooks/useRBAC";
 import {
   Card,
   CardContent,
@@ -33,8 +36,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   ArrowLeft,
   Plus,
@@ -43,6 +52,9 @@ import {
   MoreVertical,
   Loader2,
   Trash2,
+  Edit,
+  Shield,
+  TestTube2,
 } from "lucide-react";
 
 interface Workspace {
@@ -77,6 +89,9 @@ export default function WorkspaceDetail() {
   const [creating, setCreating] = useState(false);
   const [newProject, setNewProject] = useState({ name: "", description: "", logo_url: "" });
   const [memberCount, setMemberCount] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (workspaceId && user) {
@@ -176,24 +191,25 @@ export default function WorkspaceDetail() {
     }
   };
 
-  const handleDeleteProject = async (projectId: string, projectName: string) => {
-    if (!confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
 
+    setDeleting(true);
     try {
       const { error } = await supabase
         .from("projects")
         .delete()
-        .eq("id", projectId);
+        .eq("id", projectToDelete.id);
 
       if (error) throw error;
 
       toast({
         title: "Project deleted",
-        description: `"${projectName}" has been deleted.`,
+        description: `"${projectToDelete.name}" has been deleted.`,
       });
 
+      setProjectToDelete(null);
+      setDeleteDialogOpen(false);
       fetchWorkspaceData();
     } catch (error: any) {
       console.error("Error deleting project:", error);
@@ -202,7 +218,14 @@ export default function WorkspaceDetail() {
         description: "Failed to delete project. You may not have permission.",
         variant: "destructive",
       });
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const openDeleteProjectDialog = (project: Project) => {
+    setProjectToDelete(project);
+    setDeleteDialogOpen(true);
   };
 
   if (loading || rbacLoading) {
@@ -232,6 +255,8 @@ export default function WorkspaceDetail() {
 
   const canCreateProject = hasPermission("project.create");
   const canDeleteProject = hasPermission("project.delete");
+  const canUpdateProject = hasPermission("project.update");
+  const isWorkspaceAdmin = hasPermission("workspace.delete");
 
   return (
     <AppLayout>
@@ -401,32 +426,51 @@ export default function WorkspaceDetail() {
                             navigate(`/test-repository?project=${project.id}`)
                           }
                         >
-                          <FolderKanban className="mr-2 h-4 w-4" />
+                          <TestTube2 className="mr-2 h-4 w-4" />
                           View Test Cases
                         </DropdownMenuItem>
-                        {canDeleteProject && (
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() =>
-                              handleDeleteProject(project.id, project.name)
-                            }
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Project
+                        {canUpdateProject && (
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Project
                           </DropdownMenuItem>
+                        )}
+                        {canDeleteProject && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => openDeleteProjectDialog(project)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Project
+                            </DropdownMenuItem>
+                          </>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <Badge
-                        variant={
-                          project.status === "active" ? "default" : "secondary"
-                        }
-                      >
-                        {project.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            project.status === "active" ? "default" : "secondary"
+                          }
+                        >
+                          {project.status}
+                        </Badge>
+                        {canDeleteProject && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Shield className="h-3 w-3 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>You can manage this project</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                       <span className="text-xs text-muted-foreground">
                         Created{" "}
                         {new Date(project.created_at).toLocaleDateString()}
@@ -438,6 +482,18 @@ export default function WorkspaceDetail() {
             </div>
           )}
         </div>
+
+        {/* Delete Project Confirmation Dialog */}
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete Project"
+          description={`Are you sure you want to delete "${projectToDelete?.name}"? This will permanently delete all test cases, test runs, and data within this project. This action cannot be undone.`}
+          confirmLabel="Delete Project"
+          variant="destructive"
+          loading={deleting}
+          onConfirm={handleDeleteProject}
+        />
       </div>
     </AppLayout>
   );
