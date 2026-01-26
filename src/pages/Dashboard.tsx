@@ -44,32 +44,14 @@ interface Project {
   workspace_name: string;
 }
 
-const stats = [
-  {
-    title: "Total Workspaces",
-    value: "3",
-    icon: Layers,
-    change: "+1 this month",
-  },
-  {
-    title: "Total Projects",
-    value: "12",
-    icon: FolderKanban,
-    change: "+3 this month",
-  },
-  {
-    title: "Test Cases",
-    value: "246",
-    icon: TestTube2,
-    change: "+24 this week",
-  },
-  {
-    title: "Execution Rate",
-    value: "72%",
-    icon: TrendingUp,
-    change: "+5% vs last week",
-  },
-];
+interface DashboardStats {
+  workspaceCount: number;
+  projectCount: number;
+  testCaseCount: number;
+  executionRate: number;
+  executedCount: number;
+  totalExecutions: number;
+}
 
 const pieData = [
   { name: "Passed", value: 58, color: "hsl(var(--chart-1))" },
@@ -146,12 +128,23 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    workspaceCount: 0,
+    projectCount: 0,
+    testCaseCount: 0,
+    executionRate: 0,
+    executedCount: 0,
+    totalExecutions: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchProjects = async () => {
+    const fetchDashboardData = async () => {
       setLoadingProjects(true);
+      setLoadingStats(true);
+      
       try {
         // Get all workspaces user is a member of
         const { data: memberships, error: memberError } = await supabase
@@ -162,8 +155,20 @@ export default function Dashboard() {
 
         if (memberError) throw memberError;
 
+        const workspaceCount = memberships?.length || 0;
+
         if (!memberships || memberships.length === 0) {
           setProjects([]);
+          setStats({
+            workspaceCount: 0,
+            projectCount: 0,
+            testCaseCount: 0,
+            executionRate: 0,
+            executedCount: 0,
+            totalExecutions: 0,
+          });
+          setLoadingStats(false);
+          setLoadingProjects(false);
           return;
         }
 
@@ -175,7 +180,7 @@ export default function Dashboard() {
           ])
         );
 
-        // Get all projects from those workspaces
+        // Fetch projects
         const { data: projectsData, error: projectsError } = await supabase
           .from("projects")
           .select("id, name, description, logo_url, status, workspace_id")
@@ -190,14 +195,73 @@ export default function Dashboard() {
         }));
 
         setProjects(projectsWithWorkspace);
+        const projectCount = projectsData?.length || 0;
+
+        // Get project IDs for further queries
+        const projectIds = projectsData?.map((p) => p.id) || [];
+
+        // Fetch test cases count
+        let testCaseCount = 0;
+        if (projectIds.length > 0) {
+          const { count } = await supabase
+            .from("test_cases")
+            .select("*", { count: "exact", head: true })
+            .in("project_id", projectIds);
+          testCaseCount = count || 0;
+        }
+
+        // Fetch test executions for execution rate
+        let executedCount = 0;
+        let totalExecutions = 0;
+        if (projectIds.length > 0) {
+          // Get test runs for these projects
+          const { data: testRuns } = await supabase
+            .from("test_runs")
+            .select("id")
+            .in("project_id", projectIds);
+
+          if (testRuns && testRuns.length > 0) {
+            const runIds = testRuns.map((r) => r.id);
+            
+            // Get total executions
+            const { count: totalCount } = await supabase
+              .from("test_executions")
+              .select("*", { count: "exact", head: true })
+              .in("test_run_id", runIds);
+            totalExecutions = totalCount || 0;
+
+            // Get executed (not 'not_run')
+            const { count: execCount } = await supabase
+              .from("test_executions")
+              .select("*", { count: "exact", head: true })
+              .in("test_run_id", runIds)
+              .neq("status", "not_run");
+            executedCount = execCount || 0;
+          }
+        }
+
+        const executionRate = totalExecutions > 0 
+          ? Math.round((executedCount / totalExecutions) * 100) 
+          : 0;
+
+        setStats({
+          workspaceCount,
+          projectCount,
+          testCaseCount,
+          executionRate,
+          executedCount,
+          totalExecutions,
+        });
+
       } catch (error) {
-        console.error("Error fetching projects:", error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setLoadingProjects(false);
+        setLoadingStats(false);
       }
     };
 
-    fetchProjects();
+    fetchDashboardData();
   }, [user]);
 
   return (
@@ -229,20 +293,99 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="border-border">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                <p className="text-xs text-primary">{stat.change}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {/* Workspaces */}
+          <Card 
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => navigate("/workspaces")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Workspaces
+              </CardTitle>
+              <Layers className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-foreground">{stats.workspaceCount}</div>
+                  <p className="text-xs text-primary">Click to view all</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Projects */}
+          <Card 
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => navigate("/projects")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Projects
+              </CardTitle>
+              <FolderKanban className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-foreground">{stats.projectCount}</div>
+                  <p className="text-xs text-primary">Click to view all</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Test Cases */}
+          <Card 
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => navigate("/test-repository")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Test Cases
+              </CardTitle>
+              <TestTube2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-foreground">{stats.testCaseCount}</div>
+                  <p className="text-xs text-primary">Click to manage</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Execution Rate */}
+          <Card 
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => navigate("/test-execution")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Execution Rate
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-foreground">{stats.executionRate}%</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.executedCount} of {stats.totalExecutions} executed
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* All Projects Section */}
