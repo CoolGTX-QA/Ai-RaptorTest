@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  logo_url: string | null;
   status: string;
   created_at: string;
   workspace_id: string;
@@ -201,14 +203,22 @@ export default function AllProjects() {
                 onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
               >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <div className="space-y-1 flex-1">
-                    <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
-                      {project.name}
-                    </CardTitle>
-                    <CardDescription className="flex items-center gap-1">
-                      <Layers className="h-3 w-3" />
-                      {project.workspace_name}
-                    </CardDescription>
+                  <div className="flex items-start gap-3 flex-1">
+                    <Avatar className="h-10 w-10 rounded-lg">
+                      <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                      <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                        {project.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1 flex-1">
+                      <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
+                        {project.name}
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-1">
+                        <Layers className="h-3 w-3" />
+                        {project.workspace_name}
+                      </CardDescription>
+                    </div>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

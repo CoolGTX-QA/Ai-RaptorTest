@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Layers,
   FolderKanban,
@@ -36,6 +37,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
+  logo_url: string | null;
   status: string;
   workspace_id: string;
   workspace_name: string;
@@ -174,7 +176,7 @@ export default function Dashboard() {
         // Get all projects from those workspaces
         const { data: projectsData, error: projectsError } = await supabase
           .from("projects")
-          .select("id, name, description, status, workspace_id")
+          .select("id, name, description, logo_url, status, workspace_id")
           .in("workspace_id", workspaceIds)
           .order("created_at", { ascending: false });
 
@@ -287,9 +289,12 @@ export default function Dashboard() {
                     className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <FolderKanban className="h-5 w-5 text-primary" />
-                      </div>
+                      <Avatar className="h-10 w-10 rounded-lg">
+                        <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                          {project.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="font-medium text-foreground">{project.name}</p>
                         <p className="text-sm text-muted-foreground">
