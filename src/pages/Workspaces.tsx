@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageUpload } from "@/components/ImageUpload";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +26,21 @@ import {
   Settings,
   MoreVertical,
   Loader2,
+  Trash2,
+  Shield,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +68,9 @@ export default function Workspaces() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newWorkspace, setNewWorkspace] = useState({ name: "", description: "", icon_url: "" });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<Workspace | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchWorkspaces();
@@ -168,6 +180,43 @@ export default function Workspaces() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleDeleteWorkspace = async () => {
+    if (!workspaceToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("workspaces")
+        .delete()
+        .eq("id", workspaceToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Workspace deleted",
+        description: `"${workspaceToDelete.name}" has been deleted.`,
+      });
+
+      setWorkspaceToDelete(null);
+      setDeleteDialogOpen(false);
+      fetchWorkspaces();
+    } catch (error: any) {
+      console.error("Error deleting workspace:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete workspace. You may not have permission.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const openDeleteDialog = (workspace: Workspace) => {
+    setWorkspaceToDelete(workspace);
+    setDeleteDialogOpen(true);
   };
 
 
@@ -296,6 +345,18 @@ export default function Workspaces() {
                         <Users className="mr-2 h-4 w-4" />
                         Manage Members
                       </DropdownMenuItem>
+                      {workspace.role === "admin" && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => openDeleteDialog(workspace)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Workspace
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </CardHeader>
@@ -310,17 +371,41 @@ export default function Workspaces() {
                       <span>{workspace.project_count} projects</span>
                     </div>
                   </div>
-                    <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                       <RoleBadge role={(workspace.role || "viewer") as AppRole} />
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/workspaces/${workspace.id}`)}>
-                        Open
-                      </Button>
+                      {workspace.role === "admin" && (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Shield className="h-4 w-4 text-primary" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>You can delete this workspace</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/workspaces/${workspace.id}`)}>
+                      Open
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete Workspace"
+          description={`Are you sure you want to delete "${workspaceToDelete?.name}"? This will permanently delete all projects, test cases, and data within this workspace. This action cannot be undone.`}
+          confirmLabel="Delete Workspace"
+          variant="destructive"
+          loading={deleting}
+          onConfirm={handleDeleteWorkspace}
+        />
       </div>
     </AppLayout>
   );
