@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { HealthProgressBar } from "@/components/HealthProgressBar";
 import {
   Layers,
   FolderKanban,
@@ -42,6 +43,9 @@ interface Project {
   status: string;
   workspace_id: string;
   workspace_name: string;
+  passedCount: number;
+  totalExecuted: number;
+  healthPercentage: number;
 }
 
 interface DashboardStats {
@@ -189,12 +193,6 @@ export default function Dashboard() {
 
         if (projectsError) throw projectsError;
 
-        const projectsWithWorkspace = (projectsData || []).map((p) => ({
-          ...p,
-          workspace_name: workspaceMap.get(p.workspace_id) || "Unknown",
-        }));
-
-        setProjects(projectsWithWorkspace);
         const projectCount = projectsData?.length || 0;
 
         // Get project IDs for further queries
@@ -210,35 +208,71 @@ export default function Dashboard() {
           testCaseCount = count || 0;
         }
 
-        // Fetch test executions for execution rate
+        // Fetch test executions for execution rate and project health
         let executedCount = 0;
         let totalExecutions = 0;
+        
+        // Map to store health data per project
+        const projectHealthMap = new Map<string, { passed: number; total: number }>();
+        
         if (projectIds.length > 0) {
-          // Get test runs for these projects
+          // Get test runs for these projects with project_id
           const { data: testRuns } = await supabase
             .from("test_runs")
-            .select("id")
+            .select("id, project_id")
             .in("project_id", projectIds);
 
           if (testRuns && testRuns.length > 0) {
             const runIds = testRuns.map((r) => r.id);
             
-            // Get total executions
-            const { count: totalCount } = await supabase
+            // Create a map from run_id to project_id
+            const runToProjectMap = new Map(testRuns.map((r) => [r.id, r.project_id]));
+            
+            // Get all executions with status
+            const { data: executions } = await supabase
               .from("test_executions")
-              .select("*", { count: "exact", head: true })
+              .select("test_run_id, status")
               .in("test_run_id", runIds);
-            totalExecutions = totalCount || 0;
-
-            // Get executed (not 'not_run')
-            const { count: execCount } = await supabase
-              .from("test_executions")
-              .select("*", { count: "exact", head: true })
-              .in("test_run_id", runIds)
-              .neq("status", "not_run");
-            executedCount = execCount || 0;
+            
+            if (executions) {
+              // Calculate totals for execution rate
+              totalExecutions = executions.length;
+              executedCount = executions.filter((e) => e.status !== "not_run").length;
+              
+              // Calculate health per project
+              executions.forEach((exec) => {
+                const projectId = runToProjectMap.get(exec.test_run_id);
+                if (projectId) {
+                  const current = projectHealthMap.get(projectId) || { passed: 0, total: 0 };
+                  if (exec.status !== "not_run") {
+                    current.total += 1;
+                    if (exec.status === "passed") {
+                      current.passed += 1;
+                    }
+                  }
+                  projectHealthMap.set(projectId, current);
+                }
+              });
+            }
           }
         }
+
+        // Build projects with health data
+        const projectsWithWorkspace = (projectsData || []).map((p) => {
+          const health = projectHealthMap.get(p.id) || { passed: 0, total: 0 };
+          const healthPercentage = health.total > 0 
+            ? Math.round((health.passed / health.total) * 100) 
+            : 0;
+          return {
+            ...p,
+            workspace_name: workspaceMap.get(p.workspace_id) || "Unknown",
+            passedCount: health.passed,
+            totalExecuted: health.total,
+            healthPercentage,
+          };
+        });
+
+        setProjects(projectsWithWorkspace);
 
         const executionRate = totalExecutions > 0 
           ? Math.round((executedCount / totalExecutions) * 100) 
@@ -434,36 +468,43 @@ export default function Dashboard() {
             ) : (
               <ScrollArea className="h-[280px]">
                 <div className="space-y-2 pr-4">
-                  {projects.slice(0, 10).map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
-                      className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-10 w-10 rounded-lg">
-                          <AvatarImage src={project.logo_url || undefined} alt={project.name} />
-                          <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                            {project.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-foreground">{project.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {project.workspace_name}
-                          </p>
+                    {projects.slice(0, 10).map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
+                        className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <Avatar className="h-10 w-10 rounded-lg shrink-0">
+                            <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                            <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                              {project.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">{project.name}</p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {project.workspace_name}
+                            </p>
+                            {/* Health Progress Bar */}
+                            <div className="mt-2">
+                              <HealthProgressBar 
+                                percentage={project.healthPercentage}
+                                totalExecuted={project.totalExecuted}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <Badge
+                            variant={project.status === "active" ? "default" : "secondary"}
+                          >
+                            {project.status}
+                          </Badge>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Badge
-                          variant={project.status === "active" ? "default" : "secondary"}
-                        >
-                          {project.status}
-                        </Badge>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </ScrollArea>
             )}
