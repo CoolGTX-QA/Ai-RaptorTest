@@ -11,6 +11,10 @@ import TestRepository from "./pages/TestRepository";
 import TestExecution from "./pages/TestExecution";
 import AIGeneration from "./pages/AIGeneration";
 import RiskAssessment from "./pages/RiskAssessment";
+import RiskScoring from "./pages/risk-assessment/RiskScoring";
+import RiskPredictions from "./pages/risk-assessment/RiskPredictions";
+import RiskAlerts from "./pages/risk-assessment/RiskAlerts";
+import MitigationTracking from "./pages/risk-assessment/MitigationTracking";
 import Defects from "./pages/Defects";
 import ReportsOverview from "./pages/reports/ReportsOverview";
 import TestExecutionReport from "./pages/reports/TestExecutionReport";
@@ -42,6 +46,10 @@ const App = () => (
             <Route path="/test-execution" element={<ProtectedRoute><TestExecution /></ProtectedRoute>} />
             <Route path="/ai-generation" element={<ProtectedRoute><AIGeneration /></ProtectedRoute>} />
             <Route path="/risk-assessment" element={<ProtectedRoute><RiskAssessment /></ProtectedRoute>} />
+            <Route path="/risk-assessment/scoring" element={<ProtectedRoute><RiskScoring /></ProtectedRoute>} />
+            <Route path="/risk-assessment/predictions" element={<ProtectedRoute><RiskPredictions /></ProtectedRoute>} />
+            <Route path="/risk-assessment/alerts" element={<ProtectedRoute><RiskAlerts /></ProtectedRoute>} />
+            <Route path="/risk-assessment/mitigation" element={<ProtectedRoute><MitigationTracking /></ProtectedRoute>} />
             <Route path="/defects" element={<ProtectedRoute><Defects /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><ReportsOverview /></ProtectedRoute>} />
             <Route path="/reports/test-execution" element={<ProtectedRoute><TestExecutionReport /></ProtectedRoute>} />
