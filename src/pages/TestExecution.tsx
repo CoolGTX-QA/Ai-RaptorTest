@@ -33,7 +33,6 @@ import {
   Plus,
   Search,
   Play,
-  ChevronRight,
   Calendar,
   CheckCircle2,
   XCircle,
@@ -43,6 +42,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useTestRuns } from "@/hooks/useTestRuns";
@@ -162,13 +162,12 @@ export default function TestExecution() {
     <AppLayout>
       <div className="space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Workspaces</span>
-          <ChevronRight className="h-4 w-4" />
-          <span>Projects</span>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-foreground font-medium">Test Execution</span>
-        </div>
+        <Breadcrumbs
+          items={[
+            { label: "Projects", href: "/projects" },
+            { label: "Test Execution" },
+          ]}
+        />
 
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
