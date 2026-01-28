@@ -440,10 +440,20 @@ export default function WorkspaceDetail() {
                           View Test Cases
                         </DropdownMenuItem>
                         {canUpdateProject && (
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Project
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate(`/projects/${project.id}/settings?workspace=${workspaceId}`)
+                              }
+                            >
+                              <Settings className="mr-2 h-4 w-4" />
+                              Project Settings
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Project
+                            </DropdownMenuItem>
+                          </>
                         )}
                         {canDeleteProject && (
                           <>
