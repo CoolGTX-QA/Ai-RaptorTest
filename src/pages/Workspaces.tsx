@@ -46,6 +46,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { RoleBadge } from "@/components/RoleBadge";
 import { AppRole } from "@/hooks/useRBAC";
+import { logActivityDirect } from "@/hooks/useActivityLog";
 
 interface Workspace {
   id: string;
@@ -145,12 +146,13 @@ export default function Workspaces() {
 
     try {
       setCreating(true);
+      const workspaceName = newWorkspace.name.trim();
       
       // Don't use .select() here because the RLS policy for SELECT requires
       // the user to be a workspace member, but the trigger that adds them 
       // runs AFTER the insert completes
       const { error } = await supabase.from("workspaces").insert({
-        name: newWorkspace.name.trim(),
+        name: workspaceName,
         description: newWorkspace.description.trim() || null,
         icon_url: newWorkspace.icon_url || null,
         created_by: user.id,
@@ -158,18 +160,37 @@ export default function Workspaces() {
 
       if (error) throw error;
 
+      // Log activity - we don't have the workspace ID yet, so we'll log after fetch
+      // We need to fetch workspaces to get the new workspace ID
+      setTimeout(async () => {
+        const { data: newWs } = await supabase
+          .from("workspaces")
+          .select("id")
+          .eq("name", workspaceName)
+          .eq("created_by", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (newWs) {
+          await logActivityDirect(user.id, {
+            actionType: "create",
+            entityType: "workspace",
+            entityId: newWs.id,
+            entityName: workspaceName,
+            workspaceId: newWs.id,
+          });
+        }
+        fetchWorkspaces();
+      }, 500);
+
       toast({
         title: "Workspace created",
-        description: `"${newWorkspace.name.trim()}" has been created successfully.`,
+        description: `"${workspaceName}" has been created successfully.`,
       });
 
       setNewWorkspace({ name: "", description: "", icon_url: "" });
       setCreateDialogOpen(false);
-      
-      // Wait a bit for the trigger to add the user as admin, then fetch
-      setTimeout(() => {
-        fetchWorkspaces();
-      }, 500);
     } catch (error: any) {
       console.error("Error creating workspace:", error);
       toast({
@@ -183,8 +204,9 @@ export default function Workspaces() {
   };
 
   const handleDeleteWorkspace = async () => {
-    if (!workspaceToDelete) return;
+    if (!workspaceToDelete || !user) return;
 
+    const workspaceInfo = { ...workspaceToDelete };
     setDeleting(true);
     try {
       const { error } = await supabase
@@ -193,6 +215,15 @@ export default function Workspaces() {
         .eq("id", workspaceToDelete.id);
 
       if (error) throw error;
+
+      // Log activity
+      await logActivityDirect(user.id, {
+        actionType: "delete",
+        entityType: "workspace",
+        entityId: workspaceInfo.id,
+        entityName: workspaceInfo.name,
+        workspaceId: workspaceInfo.id,
+      });
 
       toast({
         title: "Workspace deleted",
