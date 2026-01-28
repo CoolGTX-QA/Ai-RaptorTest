@@ -27,9 +27,17 @@ import {
   AlertTriangle,
   Plug,
   Save,
+  ExternalLink,
 } from "lucide-react";
+import { IntegrationConfigDialog } from "@/components/workspace/IntegrationConfigDialog";
 
-interface WorkspaceSettings {
+type IntegrationType = "jira" | "clickup" | "linear" | "raptorassist";
+
+interface IntegrationConfig {
+  [key: string]: string;
+}
+
+interface WorkspaceSettingsData {
   id: string;
   workspace_id: string;
   enabled_tools: {
@@ -44,6 +52,12 @@ interface WorkspaceSettings {
     linear: boolean;
     raptorassist: boolean;
   };
+  integration_configs?: {
+    jira?: IntegrationConfig;
+    clickup?: IntegrationConfig;
+    linear?: IntegrationConfig;
+    raptorassist?: IntegrationConfig;
+  };
 }
 
 interface Workspace {
@@ -51,18 +65,25 @@ interface Workspace {
   name: string;
 }
 
-const defaultSettings: WorkspaceSettings["enabled_tools"] = {
+const defaultSettings: WorkspaceSettingsData["enabled_tools"] = {
   ai_tools: true,
   reports: true,
   analytics: true,
   risk_assessment: true,
 };
 
-const defaultIntegrations: WorkspaceSettings["enabled_integrations"] = {
+const defaultIntegrations: WorkspaceSettingsData["enabled_integrations"] = {
   jira: false,
   clickup: false,
   linear: false,
   raptorassist: false,
+};
+
+const defaultIntegrationConfigs: WorkspaceSettingsData["integration_configs"] = {
+  jira: {},
+  clickup: {},
+  linear: {},
+  raptorassist: {},
 };
 
 export default function WorkspaceSettings() {
@@ -73,7 +94,7 @@ export default function WorkspaceSettings() {
   const { hasMinRole, loading: rbacLoading } = useRBAC(workspaceId);
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [settings, setSettings] = useState<WorkspaceSettings | null>(null);
+  const [settings, setSettings] = useState<WorkspaceSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -81,6 +102,11 @@ export default function WorkspaceSettings() {
   // Local state for form
   const [enabledTools, setEnabledTools] = useState(defaultSettings);
   const [enabledIntegrations, setEnabledIntegrations] = useState(defaultIntegrations);
+  const [integrationConfigs, setIntegrationConfigs] = useState(defaultIntegrationConfigs);
+  
+  // Dialog state
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [activeIntegration, setActiveIntegration] = useState<IntegrationType | null>(null);
 
   useEffect(() => {
     if (workspaceId && user) {
@@ -129,6 +155,28 @@ export default function WorkspaceSettings() {
         const tools = settingsData.enabled_tools as Record<string, boolean> | null;
         const integrations = settingsData.enabled_integrations as Record<string, boolean> | null;
         
+        // Fetch integration configs from workspace_integrations table
+        const { data: integrationsData } = await supabase
+          .from("workspace_integrations")
+          .select("integration_type, config, is_active")
+          .eq("workspace_id", workspaceId);
+
+        const configs: WorkspaceSettingsData["integration_configs"] = {
+          jira: {},
+          clickup: {},
+          linear: {},
+          raptorassist: {},
+        };
+
+        if (integrationsData) {
+          integrationsData.forEach((int) => {
+            const type = int.integration_type as IntegrationType;
+            if (configs[type] !== undefined) {
+              configs[type] = (int.config as IntegrationConfig) || {};
+            }
+          });
+        }
+        
         setSettings({
           id: settingsData.id,
           workspace_id: settingsData.workspace_id,
@@ -144,6 +192,7 @@ export default function WorkspaceSettings() {
             linear: integrations?.linear ?? false,
             raptorassist: integrations?.raptorassist ?? false,
           },
+          integration_configs: configs,
         });
         setEnabledTools({
           ai_tools: tools?.ai_tools ?? true,
@@ -157,10 +206,12 @@ export default function WorkspaceSettings() {
           linear: integrations?.linear ?? false,
           raptorassist: integrations?.raptorassist ?? false,
         });
+        setIntegrationConfigs(configs);
       } else {
         // No settings exist yet, use defaults
         setEnabledTools(defaultSettings);
         setEnabledIntegrations(defaultIntegrations);
+        setIntegrationConfigs(defaultIntegrationConfigs);
       }
     } catch (error: any) {
       console.error("Error fetching workspace settings:", error);
@@ -183,11 +234,81 @@ export default function WorkspaceSettings() {
   };
 
   const handleIntegrationToggle = (integration: keyof typeof enabledIntegrations) => {
+    const newValue = !enabledIntegrations[integration];
     setEnabledIntegrations((prev) => ({
       ...prev,
-      [integration]: !prev[integration],
+      [integration]: newValue,
     }));
     setHasChanges(true);
+    
+    // If enabling, open config dialog
+    if (newValue) {
+      setActiveIntegration(integration);
+      setConfigDialogOpen(true);
+    }
+  };
+
+  const handleConfigureClick = (integration: IntegrationType) => {
+    setActiveIntegration(integration);
+    setConfigDialogOpen(true);
+  };
+
+  const handleSaveIntegrationConfig = async (config: IntegrationConfig) => {
+    if (!workspaceId || !user || !activeIntegration) return;
+    
+    try {
+      // Check if integration already exists
+      const { data: existing } = await supabase
+        .from("workspace_integrations")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .eq("integration_type", activeIntegration)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from("workspace_integrations")
+          .update({
+            config,
+            is_active: true,
+          })
+          .eq("id", existing.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from("workspace_integrations")
+          .insert({
+            workspace_id: workspaceId,
+            integration_type: activeIntegration,
+            config,
+            is_active: true,
+            connected_by: user.id,
+          });
+
+        if (error) throw error;
+      }
+
+      // Update local state
+      setIntegrationConfigs((prev) => ({
+        ...prev,
+        [activeIntegration]: config,
+      }));
+
+      toast({
+        title: "Integration configured",
+        description: `${activeIntegration.charAt(0).toUpperCase() + activeIntegration.slice(1)} has been configured successfully.`,
+      });
+    } catch (error: any) {
+      console.error("Error saving integration config:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save integration configuration.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -411,7 +532,8 @@ export default function WorkspaceSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
+            {/* Jira */}
+            <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="jira" className="text-base font-medium text-foreground flex items-center gap-2">
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
@@ -424,15 +546,28 @@ export default function WorkspaceSettings() {
                   Sync defects and requirements with Atlassian Jira
                 </p>
               </div>
-              <Switch
-                id="jira"
-                checked={enabledIntegrations.jira}
-                onCheckedChange={() => handleIntegrationToggle("jira")}
-              />
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.jira && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("jira")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
+                  </Button>
+                )}
+                <Switch
+                  id="jira"
+                  checked={enabledIntegrations.jira}
+                  onCheckedChange={() => handleIntegrationToggle("jira")}
+                />
+              </div>
             </div>
 
             <Separator />
 
+            {/* ClickUp */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="clickup" className="text-base font-medium text-foreground flex items-center gap-2">
@@ -447,15 +582,28 @@ export default function WorkspaceSettings() {
                   Connect with ClickUp for task management
                 </p>
               </div>
-              <Switch
-                id="clickup"
-                checked={enabledIntegrations.clickup}
-                onCheckedChange={() => handleIntegrationToggle("clickup")}
-              />
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.clickup && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("clickup")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
+                  </Button>
+                )}
+                <Switch
+                  id="clickup"
+                  checked={enabledIntegrations.clickup}
+                  onCheckedChange={() => handleIntegrationToggle("clickup")}
+                />
+              </div>
             </div>
 
             <Separator />
 
+            {/* Linear */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="linear" className="text-base font-medium text-foreground flex items-center gap-2">
@@ -470,15 +618,28 @@ export default function WorkspaceSettings() {
                   Integrate with Linear for issue tracking
                 </p>
               </div>
-              <Switch
-                id="linear"
-                checked={enabledIntegrations.linear}
-                onCheckedChange={() => handleIntegrationToggle("linear")}
-              />
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.linear && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("linear")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
+                  </Button>
+                )}
+                <Switch
+                  id="linear"
+                  checked={enabledIntegrations.linear}
+                  onCheckedChange={() => handleIntegrationToggle("linear")}
+                />
+              </div>
             </div>
 
             <Separator />
 
+            {/* RaptorAssist */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="raptorassist" className="text-base font-medium text-foreground flex items-center gap-2">
@@ -491,14 +652,35 @@ export default function WorkspaceSettings() {
                   Connect to RaptorAssist AI for enhanced testing capabilities
                 </p>
               </div>
-              <Switch
-                id="raptorassist"
-                checked={enabledIntegrations.raptorassist}
-                onCheckedChange={() => handleIntegrationToggle("raptorassist")}
-              />
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.raptorassist && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("raptorassist")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
+                  </Button>
+                )}
+                <Switch
+                  id="raptorassist"
+                  checked={enabledIntegrations.raptorassist}
+                  onCheckedChange={() => handleIntegrationToggle("raptorassist")}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Integration Config Dialog */}
+        <IntegrationConfigDialog
+          open={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
+          integrationType={activeIntegration}
+          onSave={handleSaveIntegrationConfig}
+          existingConfig={activeIntegration ? integrationConfigs?.[activeIntegration] : {}}
+        />
       </div>
     </AppLayout>
   );
