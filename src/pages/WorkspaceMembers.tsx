@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRBAC, ROLE_CONFIGS, AppRole } from "@/hooks/useRBAC";
 import { useToast } from "@/hooks/use-toast";
+import { logActivityDirect } from "@/hooks/useActivityLog";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,7 +184,7 @@ export default function WorkspaceMembers() {
       // Check if user exists
       const { data: existingProfile, error: profileError } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, full_name")
         .eq("email", inviteEmail.toLowerCase())
         .single();
 
@@ -203,6 +204,15 @@ export default function WorkspaceMembers() {
           });
 
         if (inviteError) throw inviteError;
+
+        // Log invite activity
+        await logActivityDirect(user.id, {
+          actionType: "create",
+          entityType: "member",
+          entityName: inviteEmail.toLowerCase(),
+          workspaceId: workspaceId,
+          details: { action: "invited", role: inviteRole, email: inviteEmail.toLowerCase() },
+        });
 
         toast({
           title: "Invitation sent",
@@ -239,6 +249,16 @@ export default function WorkspaceMembers() {
 
         if (memberError) throw memberError;
 
+        // Log member added activity
+        await logActivityDirect(user.id, {
+          actionType: "create",
+          entityType: "member",
+          entityId: existingProfile.id,
+          entityName: existingProfile.full_name || inviteEmail,
+          workspaceId: workspaceId,
+          details: { action: "added", role: inviteRole, email: inviteEmail.toLowerCase() },
+        });
+
         toast({
           title: "Member added",
           description: `${inviteEmail} has been added to the workspace`,
@@ -261,7 +281,9 @@ export default function WorkspaceMembers() {
     }
   };
 
-  const handleChangeRole = async (memberId: string, newRole: AppRole) => {
+  const handleChangeRole = async (memberId: string, memberName: string, oldRole: AppRole, newRole: AppRole) => {
+    if (!workspaceId || !user) return;
+    
     setChangingRole(memberId);
     try {
       const { error } = await supabase
@@ -270,6 +292,16 @@ export default function WorkspaceMembers() {
         .eq("id", memberId);
 
       if (error) throw error;
+
+      // Log role change activity
+      await logActivityDirect(user.id, {
+        actionType: "update",
+        entityType: "member",
+        entityId: memberId,
+        entityName: memberName,
+        workspaceId: workspaceId,
+        details: { action: "role_changed", oldRole, newRole },
+      });
 
       toast({
         title: "Role updated",
@@ -289,7 +321,9 @@ export default function WorkspaceMembers() {
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberEmail?: string) => {
+  const handleRemoveMember = async (memberId: string, memberUserId: string, memberName?: string, memberEmail?: string) => {
+    if (!workspaceId || !user) return;
+    
     if (!confirm(`Are you sure you want to remove this member from the workspace?`)) {
       return;
     }
@@ -301,6 +335,16 @@ export default function WorkspaceMembers() {
         .eq("id", memberId);
 
       if (error) throw error;
+
+      // Log member removal activity
+      await logActivityDirect(user.id, {
+        actionType: "delete",
+        entityType: "member",
+        entityId: memberUserId,
+        entityName: memberName || memberEmail || "Unknown",
+        workspaceId: workspaceId,
+        details: { action: "removed", email: memberEmail },
+      });
 
       toast({
         title: "Member removed",
@@ -556,11 +600,11 @@ export default function WorkspaceMembers() {
                       </TableCell>
                       <TableCell>
                         {member.accepted_at ? (
-                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                             Active
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
                             Pending
                           </Badge>
                         )}
@@ -588,7 +632,12 @@ export default function WorkspaceMembers() {
                                     {getAssignableRoles().map((role) => (
                                       <DropdownMenuItem
                                         key={role}
-                                        onClick={() => handleChangeRole(member.id, role)}
+                                        onClick={() => handleChangeRole(
+                                          member.id, 
+                                          member.profile?.full_name || member.profile?.email || "Unknown",
+                                          member.role,
+                                          role
+                                        )}
                                         disabled={
                                           member.role === role ||
                                           changingRole === member.id
@@ -607,6 +656,8 @@ export default function WorkspaceMembers() {
                                     onClick={() =>
                                       handleRemoveMember(
                                         member.id,
+                                        member.user_id,
+                                        member.profile?.full_name || undefined,
                                         member.profile?.email
                                       )
                                     }

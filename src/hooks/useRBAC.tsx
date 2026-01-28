@@ -173,6 +173,11 @@ export function useRBAC(workspaceId?: string) {
 
   const getAssignableRoles = useCallback((): AppRole[] => {
     if (!userRole) return [];
+    // Admins can assign all roles including admin
+    // Others can only assign roles lower than their own
+    if (userRole === "admin") {
+      return getAllRoles();
+    }
     return getAllRoles().filter(
       (role) => ROLE_CONFIGS[userRole].level > ROLE_CONFIGS[role].level
     );
