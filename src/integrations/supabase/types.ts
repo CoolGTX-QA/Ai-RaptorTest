@@ -98,6 +98,204 @@ export type Database = {
         }
         Relationships: []
       }
+      project_integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          project_id: string
+          updated_at: string
+          workspace_integration_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          project_id: string
+          updated_at?: string
+          workspace_integration_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          project_id?: string
+          updated_at?: string
+          workspace_integration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_integrations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_integrations_workspace_integration_id_fkey"
+            columns: ["workspace_integration_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          id: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          id?: string
+          project_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          id?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_milestones: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          status: string
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          status?: string
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          status?: string
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_settings: {
+        Row: {
+          created_at: string
+          custom_fields: Json | null
+          custom_priorities: Json | null
+          custom_statuses: Json | null
+          id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_fields?: Json | null
+          custom_priorities?: Json | null
+          custom_statuses?: Json | null
+          id?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_fields?: Json | null
+          custom_priorities?: Json | null
+          custom_statuses?: Json | null
+          id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tags: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tags_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
@@ -337,6 +535,50 @@ export type Database = {
           },
         ]
       }
+      workspace_integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          config: Json
+          connected_at: string
+          connected_by: string
+          id: string
+          integration_type: string
+          is_active: boolean
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          config?: Json
+          connected_at?: string
+          connected_by: string
+          id?: string
+          integration_type: string
+          is_active?: boolean
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          config?: Json
+          connected_at?: string
+          connected_by?: string
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_integrations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invites: {
         Row: {
           accepted_at: string | null
@@ -416,6 +658,117 @@ export type Database = {
           },
         ]
       }
+      workspace_settings: {
+        Row: {
+          created_at: string
+          enabled_integrations: Json
+          enabled_tools: Json
+          id: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled_integrations?: Json
+          enabled_tools?: Json
+          id?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled_integrations?: Json
+          enabled_tools?: Json
+          id?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_tags: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          workspace_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          workspace_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_tags_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_templates: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
@@ -454,6 +807,10 @@ export type Database = {
       get_user_workspace_role: {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_project_access: {
+        Args: { p_min_role?: string; p_project_id: string; p_user_id: string }
+        Returns: boolean
       }
       has_workspace_access: {
         Args: {
