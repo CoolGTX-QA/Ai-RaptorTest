@@ -181,124 +181,48 @@ export default function WorkspaceMembers() {
 
     setInviting(true);
     try {
-      // Check if user exists
-      const { data: existingProfile, error: profileError } = await supabase
+      // Get inviter profile for email
+      const { data: inviterProfile } = await supabase
         .from("profiles")
-        .select("id, full_name")
-        .eq("email", inviteEmail.toLowerCase())
+        .select("full_name, email")
+        .eq("id", user.id)
         .single();
 
-      if (profileError && profileError.code !== "PGRST116") {
-        throw profileError;
+      // Call edge function to handle invite creation and email sending
+      const { data, error } = await supabase.functions.invoke("send-invite", {
+        body: {
+          workspaceId: workspaceId,
+          workspaceName: workspace?.name || "Workspace",
+          email: inviteEmail.toLowerCase(),
+          role: inviteRole,
+          inviterId: user.id,
+          inviterName: inviterProfile?.full_name || inviterProfile?.email || "A team member",
+        },
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to send invitation");
       }
 
-      if (!existingProfile) {
-        // Create invite for non-existing user
-        const { data: inviteData, error: inviteError } = await supabase
-          .from("workspace_invites")
-          .insert({
-            workspace_id: workspaceId,
-            email: inviteEmail.toLowerCase(),
-            role: inviteRole,
-            invited_by: user.id,
-          })
-          .select()
-          .single();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
-        if (inviteError) throw inviteError;
-
-        // Get inviter profile for email
-        const { data: inviterProfile } = await supabase
-          .from("profiles")
-          .select("full_name, email")
-          .eq("id", user.id)
-          .single();
-
-        // Send invitation email via edge function
-        try {
-          const response = await supabase.functions.invoke("send-invite", {
-            body: {
-              inviteId: inviteData.id,
-              email: inviteEmail.toLowerCase(),
-              workspaceName: workspace?.name || "Workspace",
-              inviterName: inviterProfile?.full_name || inviterProfile?.email || "A team member",
-              role: inviteRole,
-            },
-          });
-
-          if (response.error) {
-            console.error("Failed to send email:", response.error);
-            // Still show success as invite was created, just email failed
-            toast({
-              title: "Invitation created",
-              description: `Invitation created for ${inviteEmail}. Note: Email delivery may have failed.`,
-            });
-          } else {
-            toast({
-              title: "Invitation sent",
-              description: `An invitation email has been sent to ${inviteEmail}`,
-            });
-          }
-        } catch (emailError) {
-          console.error("Email sending error:", emailError);
-          toast({
-            title: "Invitation created",
-            description: `Invitation created for ${inviteEmail}. Email notification could not be sent.`,
-          });
-        }
-
-        // Log invite activity
-        await logActivityDirect(user.id, {
-          actionType: "create",
-          entityType: "member",
-          entityName: inviteEmail.toLowerCase(),
-          workspaceId: workspaceId,
-          details: { action: "invited", role: inviteRole, email: inviteEmail.toLowerCase() },
-        });
-      } else {
-        // Check if already a member
-        const { data: existingMember } = await supabase
-          .from("workspace_members")
-          .select("id")
-          .eq("workspace_id", workspaceId)
-          .eq("user_id", existingProfile.id)
-          .single();
-
-        if (existingMember) {
-          toast({
-            title: "Already a member",
-            description: "This user is already a member of this workspace",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Add user as member directly
-        const { error: memberError } = await supabase
-          .from("workspace_members")
-          .insert({
-            workspace_id: workspaceId,
-            user_id: existingProfile.id,
-            role: inviteRole,
-            invited_by: user.id,
-            accepted_at: new Date().toISOString(),
-          });
-
-        if (memberError) throw memberError;
-
-        // Log member added activity
-        await logActivityDirect(user.id, {
-          actionType: "create",
-          entityType: "member",
-          entityId: existingProfile.id,
-          entityName: existingProfile.full_name || inviteEmail,
-          workspaceId: workspaceId,
-          details: { action: "added", role: inviteRole, email: inviteEmail.toLowerCase() },
-        });
-
+      if (data?.memberAdded) {
         toast({
           title: "Member added",
           description: `${inviteEmail} has been added to the workspace`,
+        });
+      } else if (data?.emailSent) {
+        toast({
+          title: "Invitation sent",
+          description: `An invitation email has been sent to ${inviteEmail}`,
+        });
+      } else {
+        toast({
+          title: "Invitation created",
+          description: `Invitation created for ${inviteEmail}. Email notification may have failed.`,
         });
       }
 
