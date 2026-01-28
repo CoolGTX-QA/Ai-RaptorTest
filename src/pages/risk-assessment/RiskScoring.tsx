@@ -12,15 +12,8 @@ import {
 } from "@/components/ui/table";
 import { ChevronRight, Target, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const riskScores = [
-  { module: "Authentication", score: 89, level: "High", tests: 12, coverage: 65 },
-  { module: "Payment Processing", score: 78, level: "High", tests: 18, coverage: 72 },
-  { module: "User Management", score: 65, level: "Medium", tests: 25, coverage: 85 },
-  { module: "Reporting", score: 45, level: "Low", tests: 15, coverage: 90 },
-  { module: "Dashboard", score: 32, level: "Low", tests: 20, coverage: 95 },
-  { module: "Settings", score: 28, level: "Low", tests: 8, coverage: 88 },
-];
+import { useRiskScoring } from "@/hooks/useRiskData";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const riskLevelColors: Record<string, string> = {
   High: "bg-destructive text-destructive-foreground",
@@ -29,6 +22,8 @@ const riskLevelColors: Record<string, string> = {
 };
 
 export default function RiskScoring() {
+  const { data: riskScores, isLoading } = useRiskScoring();
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -73,45 +68,63 @@ export default function RiskScoring() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Module</TableHead>
-                  <TableHead>Risk Score</TableHead>
-                  <TableHead>Risk Level</TableHead>
-                  <TableHead>Test Cases</TableHead>
-                  <TableHead className="text-right">Coverage</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {riskScores.map((item) => (
-                  <TableRow key={item.module}>
-                    <TableCell className="font-medium text-foreground">
-                      {item.module}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress value={item.score} className="w-24 h-2" />
-                        <span className="text-sm font-medium text-foreground w-10">
-                          {item.score}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={cn(riskLevelColors[item.level])}>
-                        {item.level}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.tests}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {item.coverage}%
-                    </TableCell>
-                  </TableRow>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-2 w-24" />
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : !riskScores || riskScores.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No risk data available. Create test cases and executions to generate risk scores.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Module</TableHead>
+                    <TableHead>Risk Score</TableHead>
+                    <TableHead>Risk Level</TableHead>
+                    <TableHead>Test Cases</TableHead>
+                    <TableHead className="text-right">Coverage</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {riskScores.map((item) => (
+                    <TableRow key={item.module}>
+                      <TableCell className="font-medium text-foreground">
+                        {item.module}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Progress value={item.score} className="w-24 h-2" />
+                          <span className="text-sm font-medium text-foreground w-10">
+                            {item.score}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn(riskLevelColors[item.level])}>
+                          {item.level}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.tests}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {item.coverage}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
