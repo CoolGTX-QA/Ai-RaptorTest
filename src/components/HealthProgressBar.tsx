@@ -24,20 +24,13 @@ export function HealthProgressBar({ percentage, totalExecuted, className }: Heal
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <div className="flex-1 max-w-[120px] h-2 bg-muted rounded-full overflow-hidden">
-        {hasData ? (
-          <div
-            className={cn("h-full transition-all", getHealthColorClass(percentage))}
-            style={{ width: `${percentage}%` }}
-          />
-        ) : (
-          <div
-            className="h-full bg-muted-foreground/20 transition-all"
-            style={{ width: "100%" }}
-          />
-        )}
+        <div
+          className={cn("h-full transition-all", hasData ? getHealthColorClass(percentage) : "bg-destructive")}
+          style={{ width: `${hasData ? percentage : 0}%` }}
+        />
       </div>
       <span className={cn("text-xs font-medium", hasData ? getTextColorClass(percentage) : "text-muted-foreground")}>
-        {hasData ? `${percentage}%` : "N/A"}
+        {percentage}%
       </span>
     </div>
   );
