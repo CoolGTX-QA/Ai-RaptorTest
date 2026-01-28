@@ -804,6 +804,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrypt_api_key: {
+        Args: { p_encrypted_key: string; p_encryption_key: string }
+        Returns: string
+      }
+      encrypt_api_key: {
+        Args: { p_api_key: string; p_encryption_key: string }
+        Returns: string
+      }
       get_user_workspace_role: {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
