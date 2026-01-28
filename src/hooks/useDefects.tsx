@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { logActivityDirect } from "@/hooks/useActivityLog";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type Defect = Tables<"defects"> & {
@@ -90,6 +91,23 @@ export function useDefects(projectId?: string) {
         .single();
 
       if (error) throw error;
+      
+      // Log activity
+      const { data: project } = await supabase
+        .from("projects")
+        .select("workspace_id")
+        .eq("id", input.project_id)
+        .single();
+      
+      await logActivityDirect(user.id, {
+        actionType: "create",
+        entityType: "defect",
+        entityId: data.id,
+        entityName: data.title,
+        projectId: input.project_id,
+        workspaceId: project?.workspace_id,
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -103,6 +121,7 @@ export function useDefects(projectId?: string) {
 
   const updateDefect = useMutation({
     mutationFn: async (input: UpdateDefectInput) => {
+      if (!user) throw new Error("Not authenticated");
       const { id, ...updates } = input;
       const { data, error } = await supabase
         .from("defects")
@@ -112,6 +131,23 @@ export function useDefects(projectId?: string) {
         .single();
 
       if (error) throw error;
+      
+      // Log activity
+      const { data: project } = await supabase
+        .from("projects")
+        .select("workspace_id")
+        .eq("id", data.project_id)
+        .single();
+      
+      await logActivityDirect(user.id, {
+        actionType: "update",
+        entityType: "defect",
+        entityId: data.id,
+        entityName: data.title,
+        projectId: data.project_id,
+        workspaceId: project?.workspace_id,
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -125,8 +161,29 @@ export function useDefects(projectId?: string) {
 
   const deleteDefect = useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error("Not authenticated");
+      
+      // Get defect info before deletion
+      const { data: defect } = await supabase
+        .from("defects")
+        .select("title, project_id, projects(workspace_id)")
+        .eq("id", id)
+        .single();
+      
       const { error } = await supabase.from("defects").delete().eq("id", id);
       if (error) throw error;
+      
+      // Log activity
+      if (defect) {
+        await logActivityDirect(user.id, {
+          actionType: "delete",
+          entityType: "defect",
+          entityId: id,
+          entityName: defect.title,
+          projectId: defect.project_id,
+          workspaceId: (defect.projects as any)?.workspace_id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["defects"] });

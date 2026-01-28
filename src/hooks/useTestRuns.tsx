@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { logActivityDirect } from "@/hooks/useActivityLog";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type TestRun = Tables<"test_runs"> & {
@@ -113,6 +114,22 @@ export function useTestRuns(projectId?: string) {
         if (execError) throw execError;
       }
 
+      // Log activity
+      const { data: project } = await supabase
+        .from("projects")
+        .select("workspace_id")
+        .eq("id", input.project_id)
+        .single();
+      
+      await logActivityDirect(user.id, {
+        actionType: "create",
+        entityType: "test_run",
+        entityId: testRun.id,
+        entityName: testRun.name,
+        projectId: input.project_id,
+        workspaceId: project?.workspace_id,
+      });
+
       return testRun;
     },
     onSuccess: () => {
@@ -126,6 +143,7 @@ export function useTestRuns(projectId?: string) {
 
   const updateTestRunStatus = useMutation({
     mutationFn: async ({ runId, status }: { runId: string; status: string }) => {
+      if (!user) throw new Error("Not authenticated");
       const updates: Record<string, any> = { status };
       
       if (status === "in_progress") {
@@ -142,6 +160,24 @@ export function useTestRuns(projectId?: string) {
         .single();
 
       if (error) throw error;
+      
+      // Log activity
+      const { data: project } = await supabase
+        .from("projects")
+        .select("workspace_id")
+        .eq("id", data.project_id)
+        .single();
+      
+      await logActivityDirect(user.id, {
+        actionType: "update",
+        entityType: "test_run",
+        entityId: data.id,
+        entityName: data.name,
+        projectId: data.project_id,
+        workspaceId: project?.workspace_id,
+        details: { status },
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -170,10 +206,26 @@ export function useTestRuns(projectId?: string) {
           executed_at: new Date().toISOString(),
         })
         .eq("id", executionId)
-        .select()
+        .select(`
+          *,
+          test_run:test_runs(id, name, project_id, projects(workspace_id)),
+          test_case:test_cases(title)
+        `)
         .single();
 
       if (error) throw error;
+      
+      // Log activity
+      await logActivityDirect(user.id, {
+        actionType: "execute",
+        entityType: "test_execution",
+        entityId: data.id,
+        entityName: (data.test_case as any)?.title || "Test Execution",
+        projectId: (data.test_run as any)?.project_id,
+        workspaceId: (data.test_run as any)?.projects?.workspace_id,
+        details: { status, notes },
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -187,8 +239,29 @@ export function useTestRuns(projectId?: string) {
 
   const deleteTestRun = useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error("Not authenticated");
+      
+      // Get test run info before deletion
+      const { data: testRun } = await supabase
+        .from("test_runs")
+        .select("name, project_id, projects(workspace_id)")
+        .eq("id", id)
+        .single();
+      
       const { error } = await supabase.from("test_runs").delete().eq("id", id);
       if (error) throw error;
+      
+      // Log activity
+      if (testRun) {
+        await logActivityDirect(user.id, {
+          actionType: "delete",
+          entityType: "test_run",
+          entityId: id,
+          entityName: testRun.name,
+          projectId: testRun.project_id,
+          workspaceId: (testRun.projects as any)?.workspace_id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["test-runs"] });
