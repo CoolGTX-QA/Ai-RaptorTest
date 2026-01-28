@@ -22,14 +22,13 @@ import {
   Loader2,
   Settings,
   Sparkles,
-  BarChart3,
-  FileText,
-  AlertTriangle,
   Plug,
   Save,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { IntegrationConfigDialog } from "@/components/workspace/IntegrationConfigDialog";
+import { ToolsFeatureSection } from "@/components/workspace/ToolsFeatureSection";
 
 type IntegrationType = "jira" | "clickup" | "linear" | "raptorassist";
 
@@ -103,6 +102,7 @@ export default function WorkspaceSettings() {
   const [enabledTools, setEnabledTools] = useState(defaultSettings);
   const [enabledIntegrations, setEnabledIntegrations] = useState(defaultIntegrations);
   const [integrationConfigs, setIntegrationConfigs] = useState(defaultIntegrationConfigs);
+  const [subToolSettings, setSubToolSettings] = useState<Record<string, boolean>>({});
   
   // Dialog state
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
@@ -229,6 +229,14 @@ export default function WorkspaceSettings() {
     setEnabledTools((prev) => ({
       ...prev,
       [tool]: !prev[tool],
+    }));
+    setHasChanges(true);
+  };
+
+  const handleSubToolToggle = (subToolId: string) => {
+    setSubToolSettings((prev) => ({
+      ...prev,
+      [subToolId]: !(prev[subToolId] ?? true),
     }));
     setHasChanges(true);
   };
@@ -441,81 +449,16 @@ export default function WorkspaceSettings() {
             </CardTitle>
             <CardDescription>
               Control which tools and features are available to workspace members.
+              Expand each category to configure individual sub-tools.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="ai-tools" className="text-base font-medium text-foreground">
-                  AI Tools
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable AI-powered test case generation and suggestions
-                </p>
-              </div>
-              <Switch
-                id="ai-tools"
-                checked={enabledTools.ai_tools}
-                onCheckedChange={() => handleToolToggle("ai_tools")}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="reports" className="text-base font-medium text-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Reports
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable comprehensive test reports and export functionality
-                </p>
-              </div>
-              <Switch
-                id="reports"
-                checked={enabledTools.reports}
-                onCheckedChange={() => handleToolToggle("reports")}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="analytics" className="text-base font-medium text-foreground flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Analytics
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable dashboards and analytics for test metrics
-                </p>
-              </div>
-              <Switch
-                id="analytics"
-                checked={enabledTools.analytics}
-                onCheckedChange={() => handleToolToggle("analytics")}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="risk-assessment" className="text-base font-medium text-foreground flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Risk Assessment
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable risk analysis and quality predictions
-                </p>
-              </div>
-              <Switch
-                id="risk-assessment"
-                checked={enabledTools.risk_assessment}
-                onCheckedChange={() => handleToolToggle("risk_assessment")}
-              />
-            </div>
+          <CardContent>
+            <ToolsFeatureSection
+              enabledTools={enabledTools}
+              subToolSettings={subToolSettings}
+              onToolToggle={handleToolToggle}
+              onSubToolToggle={handleSubToolToggle}
+            />
           </CardContent>
         </Card>
 
