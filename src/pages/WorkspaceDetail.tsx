@@ -18,6 +18,7 @@ import { RoleBadge } from "@/components/RoleBadge";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
 import { AppRole } from "@/hooks/useRBAC";
+import { logActivityDirect } from "@/hooks/useActivityLog";
 import {
   Card,
   CardContent,
@@ -167,21 +168,34 @@ export default function WorkspaceDetail() {
     if (!workspaceId || !user || !newProject.name.trim()) return;
 
     setCreating(true);
+    const projectName = newProject.name.trim();
     try {
-      const { error } = await supabase.from("projects").insert({
-        name: newProject.name.trim(),
+      const { data, error } = await supabase.from("projects").insert({
+        name: projectName,
         description: newProject.description.trim() || null,
         logo_url: newProject.logo_url || null,
         workspace_id: workspaceId,
         created_by: user.id,
         status: "active",
-      });
+      }).select("id").single();
 
       if (error) throw error;
 
+      // Log activity
+      if (data) {
+        await logActivityDirect(user.id, {
+          actionType: "create",
+          entityType: "project",
+          entityId: data.id,
+          entityName: projectName,
+          workspaceId: workspaceId,
+          projectId: data.id,
+        });
+      }
+
       toast({
         title: "Project created",
-        description: `"${newProject.name.trim()}" has been created successfully.`,
+        description: `"${projectName}" has been created successfully.`,
       });
 
       setNewProject({ name: "", description: "", logo_url: "" });
@@ -200,8 +214,9 @@ export default function WorkspaceDetail() {
   };
 
   const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete || !user || !workspaceId) return;
 
+    const projectInfo = { ...projectToDelete };
     setDeleting(true);
     try {
       const { error } = await supabase
@@ -210,6 +225,16 @@ export default function WorkspaceDetail() {
         .eq("id", projectToDelete.id);
 
       if (error) throw error;
+
+      // Log activity
+      await logActivityDirect(user.id, {
+        actionType: "delete",
+        entityType: "project",
+        entityId: projectInfo.id,
+        entityName: projectInfo.name,
+        workspaceId: workspaceId,
+        projectId: projectInfo.id,
+      });
 
       toast({
         title: "Project deleted",
