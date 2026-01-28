@@ -23,6 +23,15 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const encryptionKey = Deno.env.get("INTEGRATION_ENCRYPTION_KEY");
+    
+    if (!encryptionKey) {
+      console.error("INTEGRATION_ENCRYPTION_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -73,11 +82,22 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Create a simple obfuscated version (base64 encode)
-      // Note: For production, use proper encryption with vault or pgcrypto
-      const encoder = new TextEncoder();
-      const data = encoder.encode(api_key);
-      const base64Key = btoa(String.fromCharCode(...data));
+      // Use pgcrypto AES encryption via database function
+      const { data: encryptedData, error: encryptError } = await supabaseAdmin.rpc(
+        "encrypt_api_key",
+        {
+          p_api_key: api_key,
+          p_encryption_key: encryptionKey,
+        }
+      );
+
+      if (encryptError) {
+        console.error("Encryption error:", encryptError);
+        return new Response(
+          JSON.stringify({ error: "Failed to encrypt API key" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       // Check if integration already exists
       const { data: existing } = await supabaseAdmin
@@ -97,7 +117,7 @@ Deno.serve(async (req) => {
         const { error: updateError } = await supabaseAdmin
           .from("workspace_integrations")
           .update({
-            api_key_encrypted: base64Key,
+            api_key_encrypted: encryptedData,
             config: safeConfig,
             is_active: true,
             updated_at: new Date().toISOString(),
@@ -123,7 +143,7 @@ Deno.serve(async (req) => {
           .insert({
             workspace_id,
             integration_type,
-            api_key_encrypted: base64Key,
+            api_key_encrypted: encryptedData,
             config: safeConfig,
             is_active: true,
             connected_by: user.id,
