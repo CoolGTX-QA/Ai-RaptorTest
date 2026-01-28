@@ -265,55 +265,61 @@ export default function WorkspaceSettings() {
     if (!workspaceId || !user || !activeIntegration) return;
     
     try {
-      // Check if integration already exists
-      const { data: existing } = await supabase
-        .from("workspace_integrations")
-        .select("id")
-        .eq("workspace_id", workspaceId)
-        .eq("integration_type", activeIntegration)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing
-        const { error } = await supabase
-          .from("workspace_integrations")
-          .update({
-            config,
-            is_active: true,
-          })
-          .eq("id", existing.id);
-
-        if (error) throw error;
-      } else {
-        // Insert new
-        const { error } = await supabase
-          .from("workspace_integrations")
-          .insert({
-            workspace_id: workspaceId,
-            integration_type: activeIntegration,
-            config,
-            is_active: true,
-            connected_by: user.id,
-          });
-
-        if (error) throw error;
+      // Extract API key from config - different integrations use different key names
+      const apiKey = config.api_key || config.api_token;
+      
+      if (!apiKey) {
+        toast({
+          title: "Error",
+          description: "API key is required for this integration.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      // Update local state
+      // Create safe config without sensitive keys for display purposes
+      const safeConfig: IntegrationConfig = {};
+      for (const [key, value] of Object.entries(config)) {
+        if (key !== 'api_key' && key !== 'api_token') {
+          safeConfig[key] = value;
+        }
+      }
+
+      // Use edge function to securely store the API key
+      const { data, error } = await supabase.functions.invoke('manage-integration-keys', {
+        body: {
+          action: 'store',
+          api_key: apiKey,
+          workspace_id: workspaceId,
+          integration_type: activeIntegration,
+          config: safeConfig,
+        },
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to store API key securely");
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || "Failed to configure integration");
+      }
+
+      // Update local state with safe config only (no API keys)
       setIntegrationConfigs((prev) => ({
         ...prev,
-        [activeIntegration]: config,
+        [activeIntegration]: safeConfig,
       }));
 
       toast({
-        title: "Integration configured",
-        description: `${activeIntegration.charAt(0).toUpperCase() + activeIntegration.slice(1)} has been configured successfully.`,
+        title: "Integration configured securely",
+        description: `${activeIntegration.charAt(0).toUpperCase() + activeIntegration.slice(1)} has been configured. API key is stored securely.`,
       });
     } catch (error: any) {
       console.error("Error saving integration config:", error);
       toast({
         title: "Error",
-        description: "Failed to save integration configuration.",
+        description: error.message || "Failed to save integration configuration.",
         variant: "destructive",
       });
     }
