@@ -28,6 +28,7 @@ import WorkspaceDetail from "./pages/WorkspaceDetail";
 import WorkspaceMembers from "./pages/WorkspaceMembers";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import AllProjects from "./pages/AllProjects";
+import ProjectSettings from "./pages/ProjectSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/workspaces/:workspaceId/members" element={<ProtectedRoute><WorkspaceMembers /></ProtectedRoute>} />
             <Route path="/workspaces/:workspaceId/settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><AllProjects /></ProtectedRoute>} />
+            <Route path="/projects/:projectId/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
             <Route path="/members" element={<Navigate to="/dashboard" replace />} />
             <Route path="/workspace-settings" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<NotFound />} />
