@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -40,6 +40,9 @@ import {
   AlertTriangle,
   Clock,
   User,
+  Loader2,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -49,62 +52,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-const initialDefects = [
-  {
-    id: "DEF-001",
-    title: "Login fails with special characters in password",
-    severity: "critical",
-    priority: "p1",
-    status: "open",
-    assignee: "John Doe",
-    reportedBy: "Jane Smith",
-    reportedAt: "2025-01-15",
-  },
-  {
-    id: "DEF-002",
-    title: "Cart total calculation incorrect with discounts",
-    severity: "major",
-    priority: "p2",
-    status: "in_progress",
-    assignee: "Alice Brown",
-    reportedBy: "Bob Wilson",
-    reportedAt: "2025-01-14",
-  },
-  {
-    id: "DEF-003",
-    title: "UI alignment issue on mobile devices",
-    severity: "minor",
-    priority: "p3",
-    status: "resolved",
-    assignee: "Charlie Davis",
-    reportedBy: "Jane Smith",
-    reportedAt: "2025-01-12",
-  },
-  {
-    id: "DEF-004",
-    title: "Session timeout not working correctly",
-    severity: "major",
-    priority: "p2",
-    status: "open",
-    assignee: "John Doe",
-    reportedBy: "Alice Brown",
-    reportedAt: "2025-01-16",
-  },
-];
+import { useDefects } from "@/hooks/useDefects";
+import { useProjects } from "@/hooks/useProjects";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const severityColors: Record<string, string> = {
   critical: "bg-destructive text-destructive-foreground",
-  major: "bg-chart-4 text-foreground",
-  minor: "bg-chart-1 text-foreground",
-  trivial: "bg-muted text-muted-foreground",
-};
-
-const priorityLabels: Record<string, string> = {
-  p1: "P1 - Urgent",
-  p2: "P2 - High",
-  p3: "P3 - Medium",
-  p4: "P4 - Low",
+  high: "bg-chart-4 text-foreground",
+  medium: "bg-chart-1 text-foreground",
+  low: "bg-muted text-muted-foreground",
 };
 
 const statusColors: Record<string, string> = {
@@ -116,44 +74,71 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Defects() {
-  const [defects, setDefects] = useState(initialDefects);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<string>("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingDefect, setEditingDefect] = useState<any>(null);
   const { toast } = useToast();
 
-  const filteredDefects = defects.filter((defect) => {
-    const matchesSearch = defect.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || defect.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const currentProjectId = selectedProject || projects?.[0]?.id || "";
 
-  const handleCreateDefect = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const newDefect = {
-      id: `DEF-${String(defects.length + 1).padStart(3, "0")}`,
-      title: formData.get("title") as string,
-      severity: formData.get("severity") as string,
-      priority: formData.get("priority") as string,
-      status: "new",
-      assignee: formData.get("assignee") as string,
-      reportedBy: "Demo User",
-      reportedAt: new Date().toISOString().split("T")[0],
-    };
-    setDefects([newDefect, ...defects]);
-    setIsCreateOpen(false);
-    toast({
-      title: "Defect created",
-      description: `${newDefect.id} has been created successfully.`,
+  const { 
+    defects, 
+    isLoading, 
+    stats,
+    createDefect, 
+    updateDefect,
+    deleteDefect,
+  } = useDefects(currentProjectId);
+
+  const filteredDefects = useMemo(() => {
+    return defects.filter((defect) => {
+      const matchesSearch = defect.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || defect.status === statusFilter;
+      return matchesSearch && matchesStatus;
     });
+  }, [defects, searchQuery, statusFilter]);
+
+  const handleCreateDefect = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!currentProjectId) {
+      toast({ title: "Error", description: "Please select a project first", variant: "destructive" });
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    await createDefect.mutateAsync({
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      severity: formData.get("severity") as string,
+      status: "open",
+      project_id: currentProjectId,
+    });
+    setIsCreateOpen(false);
   };
 
-  const stats = {
-    total: defects.length,
-    open: defects.filter((d) => d.status === "open" || d.status === "new").length,
-    inProgress: defects.filter((d) => d.status === "in_progress").length,
-    resolved: defects.filter((d) => d.status === "resolved" || d.status === "closed").length,
+  const handleUpdateDefect = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingDefect) return;
+
+    const formData = new FormData(e.currentTarget);
+    await updateDefect.mutateAsync({
+      id: editingDefect.id,
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      severity: formData.get("severity") as string,
+      status: formData.get("status") as string,
+    });
+    setEditingDefect(null);
+  };
+
+  const handleDeleteDefect = async () => {
+    if (!deleteId) return;
+    await deleteDefect.mutateAsync(deleteId);
+    setDeleteId(null);
   };
 
   return (
@@ -181,103 +166,173 @@ export default function Defects() {
               Manage and track software defects
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Report Defect
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <form onSubmit={handleCreateDefect}>
-                <DialogHeader>
-                  <DialogTitle>Report New Defect</DialogTitle>
-                  <DialogDescription>
-                    Create a new defect report
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      placeholder="Brief description of the defect"
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      placeholder="Detailed description of the defect"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="steps">Steps to Reproduce</Label>
-                    <Textarea
-                      id="steps"
-                      name="steps"
-                      placeholder="1. Navigate to...&#10;2. Click on...&#10;3. Observe..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+          <div className="flex gap-2">
+            {/* Project Selector */}
+            <Select value={currentProjectId} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projectsLoading ? (
+                  <SelectItem value="loading" disabled>Loading...</SelectItem>
+                ) : projects?.length === 0 ? (
+                  <SelectItem value="none" disabled>No projects found</SelectItem>
+                ) : (
+                  projects?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={!currentProjectId}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Report Defect
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <form onSubmit={handleCreateDefect}>
+                  <DialogHeader>
+                    <DialogTitle>Report New Defect</DialogTitle>
+                    <DialogDescription>
+                      Create a new defect report
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="title">Title</Label>
+                      <Input
+                        id="title"
+                        name="title"
+                        placeholder="Brief description of the defect"
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        placeholder="Detailed description of the defect and steps to reproduce"
+                        rows={4}
+                      />
+                    </div>
                     <div className="grid gap-2">
                       <Label htmlFor="severity">Severity</Label>
-                      <Select name="severity" defaultValue="major">
+                      <Select name="severity" defaultValue="medium">
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="critical">Critical</SelectItem>
-                          <SelectItem value="major">Major</SelectItem>
-                          <SelectItem value="minor">Minor</SelectItem>
-                          <SelectItem value="trivial">Trivial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="priority">Priority</Label>
-                      <Select name="priority" defaultValue="p2">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="p1">P1 - Urgent</SelectItem>
-                          <SelectItem value="p2">P2 - High</SelectItem>
-                          <SelectItem value="p3">P3 - Medium</SelectItem>
-                          <SelectItem value="p4">P4 - Low</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
+                  <DialogFooter>
+                    <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createDefect.isPending}>
+                      {createDefect.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Create Defect
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingDefect} onOpenChange={(open) => !open && setEditingDefect(null)}>
+          <DialogContent className="max-w-2xl">
+            <form onSubmit={handleUpdateDefect}>
+              <DialogHeader>
+                <DialogTitle>Edit Defect</DialogTitle>
+                <DialogDescription>
+                  Update the defect details
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input
+                    id="edit-title"
+                    name="title"
+                    defaultValue={editingDefect?.title}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    name="description"
+                    defaultValue={editingDefect?.description || ""}
+                    rows={4}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="assignee">Assignee</Label>
-                    <Select name="assignee" defaultValue="John Doe">
+                    <Label htmlFor="edit-severity">Severity</Label>
+                    <Select name="severity" defaultValue={editingDefect?.severity || "medium"}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="John Doe">John Doe</SelectItem>
-                        <SelectItem value="Alice Brown">Alice Brown</SelectItem>
-                        <SelectItem value="Charlie Davis">Charlie Davis</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-status">Status</Label>
+                    <Select name="status" defaultValue={editingDefect?.status || "open"}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Create Defect</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setEditingDefect(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateDefect.isPending}>
+                  {updateDefect.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          open={!!deleteId}
+          onOpenChange={(open) => !open && setDeleteId(null)}
+          title="Delete Defect"
+          description="Are you sure you want to delete this defect? This action cannot be undone."
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={handleDeleteDefect}
+          loading={deleteDefect.isPending}
+        />
 
         {/* Stats */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -334,7 +389,7 @@ export default function Defects() {
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="open">Open</TabsTrigger>
               <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-              <TabsTrigger value="resolved">Fixed</TabsTrigger>
+              <TabsTrigger value="resolved">Resolved</TabsTrigger>
               <TabsTrigger value="closed">Closed</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -351,31 +406,45 @@ export default function Defects() {
 
         {/* Defects Table */}
         <Card className="border-border">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[100px]">ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assignee</TableHead>
-                <TableHead>Reported</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDefects.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    <p className="text-muted-foreground">No defects found matching your filters.</p>
-                  </TableCell>
+          {isLoading ? (
+            <div className="p-6 space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : filteredDefects.length === 0 ? (
+            <div className="p-12 text-center">
+              <Bug className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No defects found</h3>
+              <p className="text-muted-foreground mb-4">
+                {defects.length === 0 
+                  ? "No defects have been reported yet" 
+                  : "Try adjusting your search or filters"}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[100px]">ID</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Reported By</TableHead>
+                  <TableHead>Reported</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ) : (
-                filteredDefects.map((defect) => (
+              </TableHeader>
+              <TableBody>
+                {filteredDefects.map((defect) => (
                   <TableRow key={defect.id} className="cursor-pointer">
                     <TableCell className="font-mono text-sm text-muted-foreground">
-                      {defect.id}
+                      {defect.id.slice(0, 8)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -388,9 +457,6 @@ export default function Defects() {
                         {defect.severity}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {priorityLabels[defect.priority]}
-                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -402,11 +468,13 @@ export default function Defects() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{defect.assignee}</span>
+                        <span className="text-muted-foreground">
+                          {defect.reported_by_profile?.full_name || defect.reported_by_profile?.email || "Unknown"}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {defect.reportedAt}
+                      {format(new Date(defect.created_at), "MMM d, yyyy")}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -416,20 +484,25 @@ export default function Defects() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Change Status</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem onClick={() => setEditingDefect(defect)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => setDeleteId(defect.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       </div>
     </AppLayout>

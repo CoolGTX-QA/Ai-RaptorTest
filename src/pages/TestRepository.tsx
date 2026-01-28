@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,9 @@ import {
   ChevronRight,
   Sparkles,
   Upload,
+  Loader2,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -58,62 +61,11 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ImportWizardDialog } from "@/components/test-cases/import-wizard/ImportWizardDialog";
-
-const folders = [
-  { name: "All Tests", count: 20 },
-  { name: "User Management", count: 10 },
-  { name: "Shopping Cart", count: 5 },
-  { name: "Checkout Process", count: 1 },
-  { name: "Product Catalog", count: 4 },
-];
-
-const initialTestCases = [
-  {
-    id: "TR-1",
-    name: "User Login Authentication",
-    priority: "high",
-    status: "active",
-    type: "functional",
-    createdBy: "User 1",
-    updatedAt: "32 minutes ago",
-  },
-  {
-    id: "TR-2",
-    name: "Add Product to Cart",
-    priority: "high",
-    status: "under_review",
-    type: "functional",
-    createdBy: "User 1",
-    updatedAt: "32 minutes ago",
-  },
-  {
-    id: "TR-3",
-    name: "Checkout Process",
-    priority: "critical",
-    status: "approved",
-    type: "functional",
-    createdBy: "User 1",
-    updatedAt: "32 minutes ago",
-  },
-  {
-    id: "TR-4",
-    name: "Password Reset Function",
-    priority: "medium",
-    status: "draft",
-    type: "functional",
-    createdBy: "User 2",
-    updatedAt: "1 hour ago",
-  },
-  {
-    id: "TR-5",
-    name: "API Response Time",
-    priority: "medium",
-    status: "approved",
-    type: "performance",
-    createdBy: "User 1",
-    updatedAt: "2 hours ago",
-  },
-];
+import { useTestCases } from "@/hooks/useTestCases";
+import { useProjects } from "@/hooks/useProjects";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { format } from "date-fns";
 
 const priorityColors: Record<string, string> = {
   critical: "bg-destructive text-destructive-foreground",
@@ -124,7 +76,9 @@ const priorityColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   active: "border-chart-1 text-chart-1",
+  ready: "border-chart-1 text-chart-1",
   under_review: "border-chart-4 text-chart-4",
+  in_review: "border-chart-4 text-chart-4",
   approved: "border-primary text-primary",
   draft: "border-muted text-muted-foreground",
   obsolete: "border-destructive text-destructive",
@@ -134,29 +88,84 @@ export default function TestRepository() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [selectedFolder, setSelectedFolder] = useState("All Tests");
   const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
-  const [testCases, setTestCases] = useState(initialTestCases);
+  const [selectedProject, setSelectedProject] = useState<string>("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingTestCase, setEditingTestCase] = useState<any>(null);
+  
   const { toast } = useToast();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  
+  // Auto-select first project when projects load
+  const currentProjectId = selectedProject || projects?.[0]?.id || "";
+  
+  const { 
+    testCases, 
+    isLoading, 
+    createTestCase, 
+    updateTestCase,
+    deleteTestCase,
+    bulkCreateTestCases 
+  } = useTestCases(currentProjectId);
 
-  const handleCreateTestCase = (e: React.FormEvent<HTMLFormElement>) => {
+  // Calculate folder counts from actual data
+  const folders = useMemo(() => {
+    const priorityCounts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+    testCases.forEach((tc) => {
+      if (priorityCounts[tc.priority] !== undefined) {
+        priorityCounts[tc.priority]++;
+      }
+    });
+
+    return [
+      { name: "All Tests", count: testCases.length },
+      { name: "Critical Priority", count: priorityCounts.critical, filter: "critical" },
+      { name: "High Priority", count: priorityCounts.high, filter: "high" },
+      { name: "Medium Priority", count: priorityCounts.medium, filter: "medium" },
+      { name: "Low Priority", count: priorityCounts.low, filter: "low" },
+    ];
+  }, [testCases]);
+
+  const handleCreateTestCase = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!currentProjectId) {
+      toast({ title: "Error", description: "Please select a project first", variant: "destructive" });
+      return;
+    }
+    
     const formData = new FormData(e.currentTarget);
-    const newTestCase = {
-      id: `TR-${testCases.length + 1}`,
-      name: formData.get("name") as string,
+    await createTestCase.mutateAsync({
+      title: formData.get("name") as string,
+      description: formData.get("description") as string,
       priority: formData.get("priority") as string,
       status: "draft",
-      type: formData.get("type") as string,
-      createdBy: "Demo User",
-      updatedAt: "Just now",
-    };
-    setTestCases([newTestCase, ...testCases]);
-    setIsCreateOpen(false);
-    toast({
-      title: "Test case created",
-      description: `"${newTestCase.name}" has been created successfully.`,
+      project_id: currentProjectId,
     });
+    setIsCreateOpen(false);
+  };
+
+  const handleUpdateTestCase = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingTestCase) return;
+    
+    const formData = new FormData(e.currentTarget);
+    await updateTestCase.mutateAsync({
+      id: editingTestCase.id,
+      title: formData.get("name") as string,
+      description: formData.get("description") as string,
+      priority: formData.get("priority") as string,
+      status: formData.get("status") as string,
+    });
+    setEditingTestCase(null);
+  };
+
+  const handleDeleteTestCase = async () => {
+    if (!deleteId) return;
+    await deleteTestCase.mutateAsync(deleteId);
+    setDeleteId(null);
   };
 
   const handleBulkImport = async (importedCases: Array<{
@@ -168,22 +177,36 @@ export default function TestRepository() {
     expected_result: string;
     tags: string[];
   }>) => {
-    const newTestCases = importedCases.map((tc, index) => ({
-      id: `TR-${testCases.length + index + 1}`,
-      name: tc.title,
-      priority: tc.priority,
-      status: tc.status,
-      type: "functional",
-      createdBy: "Demo User",
-      updatedAt: "Just now",
-    }));
+    if (!currentProjectId) {
+      toast({ title: "Error", description: "Please select a project first", variant: "destructive" });
+      return;
+    }
 
-    setTestCases([...newTestCases, ...testCases]);
+    await bulkCreateTestCases.mutateAsync(
+      importedCases.map((tc) => ({
+        ...tc,
+        project_id: currentProjectId,
+      }))
+    );
   };
 
-  const filteredTestCases = testCases.filter((tc) =>
-    tc.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleFolderClick = (folderName: string, filter?: string) => {
+    setSelectedFolder(folderName);
+    if (filter) {
+      setPriorityFilter(filter);
+    } else {
+      setPriorityFilter("all");
+    }
+  };
+
+  const filteredTestCases = useMemo(() => {
+    return testCases.filter((tc) => {
+      const matchesSearch = tc.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPriority = priorityFilter === "all" || tc.priority === priorityFilter;
+      const matchesStatus = statusFilter === "all" || tc.status === statusFilter;
+      return matchesSearch && matchesPriority && matchesStatus;
+    });
+  }, [testCases, searchQuery, priorityFilter, statusFilter]);
 
   return (
     <AppLayout>
@@ -205,7 +228,25 @@ export default function TestRepository() {
               Manage and organize your test cases
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {/* Project Selector */}
+            <Select value={currentProjectId} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projectsLoading ? (
+                  <SelectItem value="loading" disabled>Loading...</SelectItem>
+                ) : projects?.length === 0 ? (
+                  <SelectItem value="none" disabled>No projects found</SelectItem>
+                ) : (
+                  projects?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+
             <Button variant="outline" asChild>
               <Link to="/ai-generation">
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -218,7 +259,7 @@ export default function TestRepository() {
             </Button>
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button disabled={!currentProjectId}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Test Case
                 </Button>
@@ -279,36 +320,6 @@ export default function TestRepository() {
                         </Select>
                       </div>
                     </div>
-                    <div className="grid gap-2">
-                      <Label>Test Steps</Label>
-                      <div className="rounded-md border border-border p-4">
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-2 text-sm font-medium text-muted-foreground">
-                            <span>#</span>
-                            <span>Action</span>
-                            <span>Expected Result</span>
-                            <span></span>
-                          </div>
-                          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-2 items-center">
-                            <span className="text-sm text-muted-foreground">1</span>
-                            <Input placeholder="Describe the action" />
-                            <Input placeholder="What should happen?" />
-                            <Button type="button" variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="mt-3"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Step
-                        </Button>
-                      </div>
-                    </div>
                   </div>
                   <DialogFooter>
                     <Button
@@ -318,13 +329,105 @@ export default function TestRepository() {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit">Create Test Case</Button>
+                    <Button type="submit" disabled={createTestCase.isPending}>
+                      {createTestCase.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Create Test Case
+                    </Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
             </Dialog>
           </div>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingTestCase} onOpenChange={(open) => !open && setEditingTestCase(null)}>
+          <DialogContent className="max-w-2xl">
+            <form onSubmit={handleUpdateTestCase}>
+              <DialogHeader>
+                <DialogTitle>Edit Test Case</DialogTitle>
+                <DialogDescription>
+                  Update the test case details
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-name">Test Name</Label>
+                  <Input
+                    id="edit-name"
+                    name="name"
+                    defaultValue={editingTestCase?.title}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    name="description"
+                    defaultValue={editingTestCase?.description || ""}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-priority">Priority</Label>
+                    <Select name="priority" defaultValue={editingTestCase?.priority || "medium"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="critical">Critical</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-status">Status</Label>
+                    <Select name="status" defaultValue={editingTestCase?.status || "draft"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="ready">Ready</SelectItem>
+                        <SelectItem value="in_review">In Review</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="obsolete">Obsolete</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingTestCase(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateTestCase.isPending}>
+                  {updateTestCase.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          open={!!deleteId}
+          onOpenChange={(open) => !open && setDeleteId(null)}
+          title="Delete Test Case"
+          description="Are you sure you want to delete this test case? This action cannot be undone."
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={handleDeleteTestCase}
+          loading={deleteTestCase.isPending}
+        />
 
         {/* Bulk Import Wizard */}
         <ImportWizardDialog
@@ -344,7 +447,7 @@ export default function TestRepository() {
               {folders.map((folder) => (
                 <button
                   key={folder.name}
-                  onClick={() => setSelectedFolder(folder.name)}
+                  onClick={() => handleFolderClick(folder.name, folder.filter)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
                     selectedFolder === folder.name && "bg-accent text-accent-foreground"
@@ -376,10 +479,19 @@ export default function TestRepository() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filter
-                </Button>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[130px]">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="ready">Ready</SelectItem>
+                    <SelectItem value="in_review">In Review</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                  </SelectContent>
+                </Select>
                 <div className="flex items-center rounded-md border border-border">
                   <Button
                     variant={viewMode === "list" ? "secondary" : "ghost"}
@@ -403,83 +515,112 @@ export default function TestRepository() {
 
             {/* Test Cases Table */}
             <Card className="border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created By</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTestCases.map((testCase) => (
-                    <TableRow key={testCase.id} className="cursor-pointer">
-                      <TableCell className="font-mono text-sm text-muted-foreground">
-                        {testCase.id}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">{testCase.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn(
-                            "capitalize",
-                            priorityColors[testCase.priority]
-                          )}
-                        >
-                          {testCase.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "capitalize",
-                            statusColors[testCase.status]
-                          )}
-                        >
-                          {testCase.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {testCase.createdBy}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {testCase.updatedAt}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+              {isLoading ? (
+                <div className="p-6 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 flex-1" />
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-              <div className="flex items-center justify-between border-t border-border px-4 py-3">
-                <p className="text-sm text-muted-foreground">
-                  Showing 1 to {filteredTestCases.length} of {filteredTestCases.length} results
-                </p>
-              </div>
+                </div>
+              ) : filteredTestCases.length === 0 ? (
+                <div className="p-12 text-center">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No test cases found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {testCases.length === 0 
+                      ? "Get started by creating your first test case" 
+                      : "Try adjusting your search or filters"}
+                  </p>
+                  {testCases.length === 0 && (
+                    <Button onClick={() => setIsCreateOpen(true)} disabled={!currentProjectId}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Test Case
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[100px]">ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created By</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTestCases.map((testCase) => (
+                      <TableRow key={testCase.id} className="cursor-pointer">
+                        <TableCell className="font-mono text-sm text-muted-foreground">
+                          {testCase.id.slice(0, 8)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-foreground">{testCase.title}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={cn(
+                              "capitalize",
+                              priorityColors[testCase.priority]
+                            )}
+                          >
+                            {testCase.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "capitalize",
+                              statusColors[testCase.status]
+                            )}
+                          >
+                            {testCase.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {testCase.created_by_profile?.full_name || testCase.created_by_profile?.email || "Unknown"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(testCase.updated_at), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setEditingTestCase(testCase)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => setDeleteId(testCase.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </Card>
           </div>
         </div>
