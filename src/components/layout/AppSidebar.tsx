@@ -20,6 +20,7 @@ import {
   TrendingUp,
   AlertTriangle,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -381,6 +382,17 @@ export function AppSidebar() {
         >
           <Settings className="h-4 w-4" />
           <span>TMT Settings</span>
+        </Button>
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "w-full justify-start gap-2",
+            isActive("/activity-log") && "bg-accent text-accent-foreground"
+          )}
+          onClick={() => navigate("/activity-log")}
+        >
+          <Activity className="h-4 w-4" />
+          <span>Activity Log</span>
         </Button>
         <Button 
           variant="ghost" 
