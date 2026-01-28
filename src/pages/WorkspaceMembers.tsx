@@ -194,16 +194,58 @@ export default function WorkspaceMembers() {
 
       if (!existingProfile) {
         // Create invite for non-existing user
-        const { error: inviteError } = await supabase
+        const { data: inviteData, error: inviteError } = await supabase
           .from("workspace_invites")
           .insert({
             workspace_id: workspaceId,
             email: inviteEmail.toLowerCase(),
             role: inviteRole,
             invited_by: user.id,
-          });
+          })
+          .select()
+          .single();
 
         if (inviteError) throw inviteError;
+
+        // Get inviter profile for email
+        const { data: inviterProfile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", user.id)
+          .single();
+
+        // Send invitation email via edge function
+        try {
+          const response = await supabase.functions.invoke("send-invite", {
+            body: {
+              inviteId: inviteData.id,
+              email: inviteEmail.toLowerCase(),
+              workspaceName: workspace?.name || "Workspace",
+              inviterName: inviterProfile?.full_name || inviterProfile?.email || "A team member",
+              role: inviteRole,
+            },
+          });
+
+          if (response.error) {
+            console.error("Failed to send email:", response.error);
+            // Still show success as invite was created, just email failed
+            toast({
+              title: "Invitation created",
+              description: `Invitation created for ${inviteEmail}. Note: Email delivery may have failed.`,
+            });
+          } else {
+            toast({
+              title: "Invitation sent",
+              description: `An invitation email has been sent to ${inviteEmail}`,
+            });
+          }
+        } catch (emailError) {
+          console.error("Email sending error:", emailError);
+          toast({
+            title: "Invitation created",
+            description: `Invitation created for ${inviteEmail}. Email notification could not be sent.`,
+          });
+        }
 
         // Log invite activity
         await logActivityDirect(user.id, {
@@ -212,11 +254,6 @@ export default function WorkspaceMembers() {
           entityName: inviteEmail.toLowerCase(),
           workspaceId: workspaceId,
           details: { action: "invited", role: inviteRole, email: inviteEmail.toLowerCase() },
-        });
-
-        toast({
-          title: "Invitation sent",
-          description: `An invitation has been sent to ${inviteEmail}`,
         });
       } else {
         // Check if already a member
