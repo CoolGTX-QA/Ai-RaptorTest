@@ -370,7 +370,18 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border p-4">
+      <SidebarFooter className="border-t border-border p-4 space-y-1">
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "w-full justify-start gap-2",
+            isActive("/tmt-settings") && "bg-accent text-accent-foreground"
+          )}
+          onClick={() => navigate("/tmt-settings")}
+        >
+          <Settings className="h-4 w-4" />
+          <span>TMT Settings</span>
+        </Button>
         <Button 
           variant="ghost" 
           className="w-full justify-start gap-2"

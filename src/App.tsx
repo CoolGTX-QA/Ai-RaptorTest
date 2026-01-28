@@ -29,6 +29,7 @@ import WorkspaceMembers from "./pages/WorkspaceMembers";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import AllProjects from "./pages/AllProjects";
 import ProjectSettings from "./pages/ProjectSettings";
+import TMTSettings from "./pages/TMTSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/projects/:projectId/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
             <Route path="/members" element={<Navigate to="/dashboard" replace />} />
             <Route path="/workspace-settings" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/tmt-settings" element={<ProtectedRoute><TMTSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
