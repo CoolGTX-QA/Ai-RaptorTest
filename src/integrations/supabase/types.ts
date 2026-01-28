@@ -224,30 +224,57 @@ export type Database = {
       }
       project_settings: {
         Row: {
+          automation_settings: Json | null
           created_at: string
           custom_fields: Json | null
           custom_priorities: Json | null
           custom_statuses: Json | null
+          default_assignees: Json | null
+          defect_resolutions: Json | null
+          defect_severities: Json | null
+          execution_statuses: Json | null
           id: string
+          notification_settings: Json | null
           project_id: string
+          sla_settings: Json | null
+          test_environments: Json | null
+          test_types: Json | null
           updated_at: string
         }
         Insert: {
+          automation_settings?: Json | null
           created_at?: string
           custom_fields?: Json | null
           custom_priorities?: Json | null
           custom_statuses?: Json | null
+          default_assignees?: Json | null
+          defect_resolutions?: Json | null
+          defect_severities?: Json | null
+          execution_statuses?: Json | null
           id?: string
+          notification_settings?: Json | null
           project_id: string
+          sla_settings?: Json | null
+          test_environments?: Json | null
+          test_types?: Json | null
           updated_at?: string
         }
         Update: {
+          automation_settings?: Json | null
           created_at?: string
           custom_fields?: Json | null
           custom_priorities?: Json | null
           custom_statuses?: Json | null
+          default_assignees?: Json | null
+          defect_resolutions?: Json | null
+          defect_severities?: Json | null
+          execution_statuses?: Json | null
           id?: string
+          notification_settings?: Json | null
           project_id?: string
+          sla_settings?: Json | null
+          test_environments?: Json | null
+          test_types?: Json | null
           updated_at?: string
         }
         Relationships: [
