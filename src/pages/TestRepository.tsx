@@ -57,7 +57,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { BulkImportDialog } from "@/components/test-cases/BulkImportDialog";
+import { ImportWizardDialog } from "@/components/test-cases/import-wizard/ImportWizardDialog";
 
 const folders = [
   { name: "All Tests", count: 20 },
@@ -326,8 +326,8 @@ export default function TestRepository() {
           </div>
         </div>
 
-        {/* Bulk Import Dialog */}
-        <BulkImportDialog
+        {/* Bulk Import Wizard */}
+        <ImportWizardDialog
           open={isBulkImportOpen}
           onOpenChange={setIsBulkImportOpen}
           onImport={handleBulkImport}
