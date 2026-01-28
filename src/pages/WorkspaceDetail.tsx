@@ -55,6 +55,7 @@ import {
   Edit,
   Shield,
   TestTube2,
+  Settings,
 } from "lucide-react";
 
 interface Workspace {
@@ -281,6 +282,15 @@ export default function WorkspaceDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isWorkspaceAdmin && (
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/workspaces/${workspaceId}/settings`)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => navigate(`/workspaces/${workspaceId}/members`)}
