@@ -81,7 +81,7 @@ export default function WorkspaceDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { hasPermission, loading: rbacLoading } = useRBAC(workspaceId);
+  const { hasPermission, hasMinRole, loading: rbacLoading } = useRBAC(workspaceId);
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -257,7 +257,7 @@ export default function WorkspaceDetail() {
   const canCreateProject = hasPermission("project.create");
   const canDeleteProject = hasPermission("project.delete");
   const canUpdateProject = hasPermission("project.update");
-  const isWorkspaceAdmin = hasPermission("workspace.delete");
+  const canManageSettings = hasMinRole("manager");
 
   return (
     <AppLayout>
@@ -282,7 +282,7 @@ export default function WorkspaceDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isWorkspaceAdmin && (
+            {canManageSettings && (
               <Button
                 variant="outline"
                 onClick={() => navigate(`/workspaces/${workspaceId}/settings`)}
