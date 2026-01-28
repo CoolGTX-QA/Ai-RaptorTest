@@ -16,6 +16,10 @@ import {
   ChevronRight,
   LogOut,
   Layers,
+  Target,
+  TrendingUp,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -46,7 +50,6 @@ const menuItems = {
   ],
   aiTools: [
     { title: "AI Test Generation", url: "/ai-generation", icon: Sparkles },
-    { title: "Risk Assessment", url: "/risk-assessment", icon: Shield },
   ],
   reports: [
     { title: "Reports Overview", url: "/reports", icon: BarChart3 },
@@ -56,6 +59,13 @@ const menuItems = {
     { title: "RCA Report", url: "/reports/rca", icon: Shield },
     { title: "Traceability", url: "/reports/traceability", icon: Layers },
     { title: "Advanced Reports", url: "/reports/advanced", icon: Sparkles },
+  ],
+  riskAssessment: [
+    { title: "Risk Overview", url: "/risk-assessment", icon: Shield },
+    { title: "Risk Scoring", url: "/risk-assessment/scoring", icon: Target },
+    { title: "Risk Predictions", url: "/risk-assessment/predictions", icon: TrendingUp },
+    { title: "Risk Alerts", url: "/risk-assessment/alerts", icon: AlertTriangle },
+    { title: "Mitigation Tracking", url: "/risk-assessment/mitigation", icon: ShieldCheck },
   ],
   settings: [
     { title: "Workspace Settings", url: "/workspace-settings", icon: Settings },
@@ -72,6 +82,7 @@ export function AppSidebar() {
     testManagement: true,
     aiTools: true,
     reports: true,
+    riskAssessment: true,
     settings: true,
   });
 
@@ -269,6 +280,41 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {menuItems.reports.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      className={cn(
+                        isActive(item.url) && "bg-accent text-accent-foreground"
+                      )}
+                    >
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel
+            onClick={() => toggleSection("riskAssessment")}
+            className="flex cursor-pointer items-center justify-between hover:bg-accent/50 rounded px-2"
+          >
+            <span>RISK ASSESSMENT</span>
+            {expandedSections.riskAssessment ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </SidebarGroupLabel>
+          {expandedSections.riskAssessment && (
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.riskAssessment.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
