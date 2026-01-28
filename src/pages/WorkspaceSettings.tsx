@@ -70,7 +70,7 @@ export default function WorkspaceSettings() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { hasPermission, loading: rbacLoading } = useRBAC(workspaceId);
+  const { hasMinRole, loading: rbacLoading } = useRBAC(workspaceId);
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [settings, setSettings] = useState<WorkspaceSettings | null>(null);
@@ -256,16 +256,16 @@ export default function WorkspaceSettings() {
     );
   }
 
-  const isAdmin = hasPermission("workspace.delete");
+  const canManageSettings = hasMinRole("manager");
 
-  if (!isAdmin) {
+  if (!canManageSettings) {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Access Denied</h2>
           <p className="text-muted-foreground mb-4">
-            You need admin permissions to access workspace settings.
+            You need manager or admin permissions to access workspace settings.
           </p>
           <Button variant="outline" onClick={() => navigate(`/workspaces/${workspaceId}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
