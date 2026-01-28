@@ -31,6 +31,7 @@ import AllProjects from "./pages/AllProjects";
 import ProjectSettings from "./pages/ProjectSettings";
 import TMTSettings from "./pages/TMTSettings";
 import ActivityLog from "./pages/ActivityLog";
+import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/workspace-settings" element={<Navigate to="/dashboard" replace />} />
             <Route path="/tmt-settings" element={<ProtectedRoute><TMTSettings /></ProtectedRoute>} />
             <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
