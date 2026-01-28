@@ -35,7 +35,6 @@ import {
   Plus,
   Search,
   Bug,
-  ChevronRight,
   MoreHorizontal,
   AlertTriangle,
   Clock,
@@ -51,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useToast } from "@/hooks/use-toast";
 import { useDefects } from "@/hooks/useDefects";
 import { useProjects } from "@/hooks/useProjects";
@@ -145,13 +145,12 @@ export default function Defects() {
     <AppLayout>
       <div className="space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Workspaces</span>
-          <ChevronRight className="h-4 w-4" />
-          <span>Projects</span>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-foreground font-medium">Defects</span>
-        </div>
+        <Breadcrumbs
+          items={[
+            { label: "Projects", href: "/projects" },
+            { label: "Defects" },
+          ]}
+        />
 
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

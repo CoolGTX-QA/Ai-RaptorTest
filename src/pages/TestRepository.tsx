@@ -44,7 +44,6 @@ import {
   FolderOpen,
   MoreHorizontal,
   FileText,
-  ChevronRight,
   Sparkles,
   Upload,
   Loader2,
@@ -59,7 +58,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ImportWizardDialog } from "@/components/test-cases/import-wizard/ImportWizardDialog";
 import { useTestCases } from "@/hooks/useTestCases";
 import { useProjects } from "@/hooks/useProjects";
@@ -212,13 +212,12 @@ export default function TestRepository() {
     <AppLayout>
       <div className="space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Workspaces</span>
-          <ChevronRight className="h-4 w-4" />
-          <span>Projects</span>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-foreground font-medium">Test Cases</span>
-        </div>
+        <Breadcrumbs
+          items={[
+            { label: "Projects", href: "/projects" },
+            { label: "Test Cases" },
+          ]}
+        />
 
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

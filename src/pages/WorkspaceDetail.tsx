@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RoleBadge } from "@/components/RoleBadge";
+import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
+import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
 import { AppRole } from "@/hooks/useRBAC";
 import {
   Card,
@@ -56,6 +58,7 @@ import {
   Shield,
   TestTube2,
   Settings,
+  UserCog,
 } from "lucide-react";
 
 interface Workspace {
@@ -93,6 +96,10 @@ export default function WorkspaceDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false);
+  const [projectForMembers, setProjectForMembers] = useState<Project | null>(null);
 
   useEffect(() => {
     if (workspaceId && user) {
@@ -227,6 +234,16 @@ export default function WorkspaceDetail() {
   const openDeleteProjectDialog = (project: Project) => {
     setProjectToDelete(project);
     setDeleteDialogOpen(true);
+  };
+
+  const openEditProjectDialog = (project: Project) => {
+    setProjectToEdit(project);
+    setEditProjectOpen(true);
+  };
+
+  const openMembersDialog = (project: Project) => {
+    setProjectForMembers(project);
+    setMembersDialogOpen(true);
   };
 
   if (loading || rbacLoading) {
@@ -449,9 +466,17 @@ export default function WorkspaceDetail() {
                               <Settings className="mr-2 h-4 w-4" />
                               Project Settings
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openEditProjectDialog(project)}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit Project
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openMembersDialog(project)}
+                            >
+                              <UserCog className="mr-2 h-4 w-4" />
+                              Manage Members
                             </DropdownMenuItem>
                           </>
                         )}
@@ -513,6 +538,23 @@ export default function WorkspaceDetail() {
           variant="destructive"
           loading={deleting}
           onConfirm={handleDeleteProject}
+        />
+
+        {/* Edit Project Dialog */}
+        <EditProjectDialog
+          project={projectToEdit}
+          open={editProjectOpen}
+          onOpenChange={setEditProjectOpen}
+          onProjectUpdated={fetchWorkspaceData}
+          workspaceId={workspaceId}
+        />
+
+        {/* Project Members Dialog */}
+        <ProjectMembersDialog
+          project={projectForMembers}
+          open={membersDialogOpen}
+          onOpenChange={setMembersDialogOpen}
+          workspaceId={workspaceId || ""}
         />
       </div>
     </AppLayout>
