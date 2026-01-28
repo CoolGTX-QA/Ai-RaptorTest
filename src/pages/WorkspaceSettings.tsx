@@ -411,9 +411,13 @@ export default function WorkspaceSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="jira" className="text-base font-medium text-foreground">
+                <Label htmlFor="jira" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M11.571 11.429L0 0h11.429a12 12 0 0 1 0 22.857l-.857-.857 1.285-1.286a9.43 9.43 0 0 0 0-13.285L11.571 11.429z" fill="#2684FF"/>
+                    <path d="M12.429 12.571L24 24H12.571a12 12 0 0 1 0-22.857l.857.857-1.285 1.286a9.43 9.43 0 0 0 0 13.285l.286.286z" fill="#2684FF"/>
+                  </svg>
                   Jira
                 </Label>
                 <p className="text-sm text-muted-foreground">
@@ -431,7 +435,12 @@ export default function WorkspaceSettings() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="clickup" className="text-base font-medium text-foreground">
+                <Label htmlFor="clickup" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M4.105 17.468l2.642-2.021a5.413 5.413 0 0 0 4.253 2.07 5.413 5.413 0 0 0 4.253-2.07l2.642 2.02C16.197 19.63 13.858 21 11 21c-2.858 0-5.197-1.37-6.895-3.532z" fill="#8930FD"/>
+                    <path d="M11 6.333l-5.294 4.32 2.103 2.575L11 10.772l3.191 2.456 2.103-2.574L11 6.333z" fill="#FF02F0"/>
+                    <path d="M11 3l7.895 6.445-2.103 2.574L11 7.563 5.208 12.02l-2.103-2.575L11 3z" fill="#FFD803"/>
+                  </svg>
                   ClickUp
                 </Label>
                 <p className="text-sm text-muted-foreground">
@@ -449,7 +458,12 @@ export default function WorkspaceSettings() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="linear" className="text-base font-medium text-foreground">
+                <Label htmlFor="linear" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M3.185 12.808l8.007 8.007a9.082 9.082 0 0 1-8.007-8.007z" fill="#5E6AD2"/>
+                    <path d="M3 11.118a9.092 9.092 0 0 1 2.665-5.453 9.092 9.092 0 0 1 5.453-2.665l9.882 9.882a9.092 9.092 0 0 1-2.665 5.453 9.092 9.092 0 0 1-5.453 2.665L3 11.118z" fill="#5E6AD2"/>
+                    <path d="M12.808 3.185a9.082 9.082 0 0 1 8.007 8.007l-8.007-8.007z" fill="#5E6AD2"/>
+                  </svg>
                   Linear
                 </Label>
                 <p className="text-sm text-muted-foreground">
@@ -467,7 +481,10 @@ export default function WorkspaceSettings() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="raptorassist" className="text-base font-medium text-foreground">
+                <Label htmlFor="raptorassist" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <div className="h-5 w-5 rounded bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                    <Sparkles className="h-3 w-3 text-primary-foreground" />
+                  </div>
                   RaptorAssist
                 </Label>
                 <p className="text-sm text-muted-foreground">
