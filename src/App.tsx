@@ -32,6 +32,8 @@ import ProjectSettings from "./pages/ProjectSettings";
 import TMTSettings from "./pages/TMTSettings";
 import ActivityLog from "./pages/ActivityLog";
 import AcceptInvite from "./pages/AcceptInvite";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +75,8 @@ const App = () => (
             <Route path="/tmt-settings" element={<ProtectedRoute><TMTSettings /></ProtectedRoute>} />
             <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
             <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
