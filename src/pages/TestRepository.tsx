@@ -440,7 +440,7 @@ export default function TestRepository() {
           {/* Sidebar - Folders */}
           <Card className="h-fit border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-foreground">Test Suites</CardTitle>
+              <CardTitle className="text-base text-foreground">Test Folder</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
               {folders.map((folder) => (
