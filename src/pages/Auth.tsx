@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -322,7 +322,14 @@ export default function Auth() {
             </CardHeader>
             <CardContent className="pt-0 pb-6">
               <div className="text-center text-sm text-muted-foreground">
-                By continuing, you agree to our <span className="text-primary hover:underline cursor-pointer">Terms of Service</span>
+                By continuing, you agree to our{" "}
+                <Link to="/terms-of-service" className="text-primary hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy-policy" className="text-primary hover:underline">
+                  Privacy Policy
+                </Link>
               </div>
             </CardContent>
           </Card>
