@@ -41,7 +41,6 @@ import {
   Filter,
   Grid3X3,
   List,
-  FolderOpen,
   MoreHorizontal,
   FileText,
   Sparkles,
@@ -66,6 +65,8 @@ import { useProjects } from "@/hooks/useProjects";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { format } from "date-fns";
+import { FolderTree } from "@/components/test-cases/FolderTree";
+import { useTestFolders } from "@/hooks/useTestFolders";
 
 const priorityColors: Record<string, string> = {
   critical: "bg-destructive text-destructive-foreground",
@@ -86,7 +87,7 @@ const statusColors: Record<string, string> = {
 
 export default function TestRepository() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [selectedFolder, setSelectedFolder] = useState("All Tests");
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -111,23 +112,13 @@ export default function TestRepository() {
     bulkCreateTestCases 
   } = useTestCases(currentProjectId);
 
-  // Calculate folder counts from actual data
-  const folders = useMemo(() => {
-    const priorityCounts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
-    testCases.forEach((tc) => {
-      if (priorityCounts[tc.priority] !== undefined) {
-        priorityCounts[tc.priority]++;
-      }
-    });
-
-    return [
-      { name: "All Tests", count: testCases.length },
-      { name: "Critical Priority", count: priorityCounts.critical, filter: "critical" },
-      { name: "High Priority", count: priorityCounts.high, filter: "high" },
-      { name: "Medium Priority", count: priorityCounts.medium, filter: "medium" },
-      { name: "Low Priority", count: priorityCounts.low, filter: "low" },
-    ];
-  }, [testCases]);
+  // Folder management
+  const {
+    folders: testFolders,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+  } = useTestFolders(currentProjectId);
 
   const handleCreateTestCase = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -190,13 +181,10 @@ export default function TestRepository() {
     );
   };
 
-  const handleFolderClick = (folderName: string, filter?: string) => {
-    setSelectedFolder(folderName);
-    if (filter) {
-      setPriorityFilter(filter);
-    } else {
-      setPriorityFilter("all");
-    }
+  const handleFolderSelect = (folderId: string | null) => {
+    setSelectedFolderId(folderId);
+    // Reset priority filter when folder changes
+    setPriorityFilter("all");
   };
 
   const filteredTestCases = useMemo(() => {
@@ -436,31 +424,22 @@ export default function TestRepository() {
         />
 
         {/* Content */}
-        <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           {/* Sidebar - Folders */}
           <Card className="h-fit border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-base text-foreground">Test Folder</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1">
-              {folders.map((folder) => (
-                <button
-                  key={folder.name}
-                  onClick={() => handleFolderClick(folder.name, folder.filter)}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
-                    selectedFolder === folder.name && "bg-accent text-accent-foreground"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4" />
-                    <span>{folder.name}</span>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {folder.count}
-                  </Badge>
-                </button>
-              ))}
+            <CardContent>
+              <FolderTree
+                folders={testFolders}
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={handleFolderSelect}
+                onCreateFolder={createFolder}
+                onRenameFolder={renameFolder}
+                onDeleteFolder={deleteFolder}
+                totalTestCases={testCases.length}
+              />
             </CardContent>
           </Card>
 
