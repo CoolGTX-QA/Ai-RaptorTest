@@ -169,6 +169,9 @@ export function ImageUpload({
         <p className="text-xs text-muted-foreground">
           JPG, PNG, GIF up to 5MB
         </p>
+        <p className="text-xs text-muted-foreground">
+          Note: Images may be publicly accessible via URL. Avoid uploading sensitive content.
+        </p>
       </div>
     </div>
   );
