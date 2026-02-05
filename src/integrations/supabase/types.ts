@@ -70,45 +70,79 @@ export type Database = {
       }
       defects: {
         Row: {
+          actual_result: string | null
           assigned_to: string | null
+          closed_at: string | null
           created_at: string
           description: string | null
+          environment: string | null
+          expected_result: string | null
           id: string
+          linked_test_case_id: string | null
+          priority: string | null
           project_id: string
           reported_by: string
+          resolution: string | null
+          resolved_at: string | null
           severity: string
           status: string
+          steps_to_reproduce: string | null
           test_execution_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          actual_result?: string | null
           assigned_to?: string | null
+          closed_at?: string | null
           created_at?: string
           description?: string | null
+          environment?: string | null
+          expected_result?: string | null
           id?: string
+          linked_test_case_id?: string | null
+          priority?: string | null
           project_id: string
           reported_by: string
+          resolution?: string | null
+          resolved_at?: string | null
           severity?: string
           status?: string
+          steps_to_reproduce?: string | null
           test_execution_id?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          actual_result?: string | null
           assigned_to?: string | null
+          closed_at?: string | null
           created_at?: string
           description?: string | null
+          environment?: string | null
+          expected_result?: string | null
           id?: string
+          linked_test_case_id?: string | null
+          priority?: string | null
           project_id?: string
           reported_by?: string
+          resolution?: string | null
+          resolved_at?: string | null
           severity?: string
           status?: string
+          steps_to_reproduce?: string | null
           test_execution_id?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "defects_linked_test_case_id_fkey"
+            columns: ["linked_test_case_id"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "defects_project_id_fkey"
             columns: ["project_id"]
@@ -121,6 +155,63 @@ export type Database = {
             columns: ["test_execution_id"]
             isOneToOne: false
             referencedRelation: "test_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean
+          message: string
+          project_id: string | null
+          title: string
+          type: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          project_id?: string | null
+          title: string
+          type: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          project_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -462,8 +553,91 @@ export type Database = {
           },
         ]
       }
-      test_cases: {
+      review_comments: {
         Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          review_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          review_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          review_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_comments_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "test_case_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_case_reviews: {
+        Row: {
+          assigned_by: string
+          comments: string | null
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewer_id: string
+          status: string
+          test_case_id: string
+          updated_at: string
+          version_reviewed: number
+        }
+        Insert: {
+          assigned_by: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewer_id: string
+          status?: string
+          test_case_id: string
+          updated_at?: string
+          version_reviewed: number
+        }
+        Update: {
+          assigned_by?: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string
+          status?: string
+          test_case_id?: string
+          updated_at?: string
+          version_reviewed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_case_reviews_test_case_id_fkey"
+            columns: ["test_case_id"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_case_versions: {
+        Row: {
+          change_summary: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -471,29 +645,31 @@ export type Database = {
           id: string
           preconditions: string | null
           priority: string
-          project_id: string
-          status: string
           steps: Json | null
           tags: string[] | null
+          test_case_id: string
+          test_type: string
           title: string
-          updated_at: string
+          version: number
         }
         Insert: {
+          change_summary?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           expected_result?: string | null
           id?: string
           preconditions?: string | null
-          priority?: string
-          project_id: string
-          status?: string
+          priority: string
           steps?: Json | null
           tags?: string[] | null
+          test_case_id: string
+          test_type?: string
           title: string
-          updated_at?: string
+          version: number
         }
         Update: {
+          change_summary?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -501,14 +677,101 @@ export type Database = {
           id?: string
           preconditions?: string | null
           priority?: string
-          project_id?: string
-          status?: string
           steps?: Json | null
           tags?: string[] | null
+          test_case_id?: string
+          test_type?: string
           title?: string
-          updated_at?: string
+          version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "test_case_versions_test_case_id_fkey"
+            columns: ["test_case_id"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_cases: {
+        Row: {
+          assigned_reviewer: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          expected_result: string | null
+          folder_id: string | null
+          id: string
+          is_locked: boolean
+          preconditions: string | null
+          priority: string
+          project_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          steps: Json | null
+          submitted_at: string | null
+          tags: string[] | null
+          test_type: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          assigned_reviewer?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          expected_result?: string | null
+          folder_id?: string | null
+          id?: string
+          is_locked?: boolean
+          preconditions?: string | null
+          priority?: string
+          project_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          steps?: Json | null
+          submitted_at?: string | null
+          tags?: string[] | null
+          test_type?: string
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          assigned_reviewer?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          expected_result?: string | null
+          folder_id?: string | null
+          id?: string
+          is_locked?: boolean
+          preconditions?: string | null
+          priority?: string
+          project_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          steps?: Json | null
+          submitted_at?: string | null
+          tags?: string[] | null
+          test_type?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_cases_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "test_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "test_cases_project_id_fkey"
             columns: ["project_id"]
@@ -520,33 +783,51 @@ export type Database = {
       }
       test_executions: {
         Row: {
+          assigned_to: string | null
+          build_version: string | null
+          completed_at: string | null
           created_at: string
+          duration_seconds: number | null
+          environment: string | null
           executed_at: string | null
           executed_by: string | null
           id: string
           notes: string | null
+          started_at: string | null
           status: string
           test_case_id: string
           test_run_id: string
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
+          build_version?: string | null
+          completed_at?: string | null
           created_at?: string
+          duration_seconds?: number | null
+          environment?: string | null
           executed_at?: string | null
           executed_by?: string | null
           id?: string
           notes?: string | null
+          started_at?: string | null
           status?: string
           test_case_id: string
           test_run_id: string
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
+          build_version?: string | null
+          completed_at?: string | null
           created_at?: string
+          duration_seconds?: number | null
+          environment?: string | null
           executed_at?: string | null
           executed_by?: string | null
           id?: string
           notes?: string | null
+          started_at?: string | null
           status?: string
           test_case_id?: string
           test_run_id?: string
@@ -565,6 +846,51 @@ export type Database = {
             columns: ["test_run_id"]
             isOneToOne: false
             referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_folders: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          parent_id: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "test_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_folders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -885,6 +1211,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_notification: {
+        Args: {
+          p_entity_id?: string
+          p_entity_type?: string
+          p_message: string
+          p_project_id: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+          p_workspace_id: string
+        }
+        Returns: string
+      }
       decrypt_api_key: {
         Args: { p_encrypted_key: string; p_encryption_key: string }
         Returns: string
