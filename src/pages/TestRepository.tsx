@@ -26,9 +26,10 @@
  import { TestCaseStatusBadge } from "@/components/test-cases/TestCaseStatusBadge";
  import { CreateTestCaseDialog } from "@/components/test-cases/CreateTestCaseDialog";
  import { TestCaseDetailDialog } from "@/components/test-cases/TestCaseDetailDialog";
- import { useTestCaseReviews } from "@/hooks/useTestCaseReviews";
- import { useTestCaseVersions } from "@/hooks/useTestCaseVersions";
- import { useWorkspaceMembers } from "@/hooks/useWorkspaceMembers";
+import { useTestCaseReviews } from "@/hooks/useTestCaseReviews";
+import { useTestCaseVersions } from "@/hooks/useTestCaseVersions";
+import { useWorkspaceMembers } from "@/hooks/useWorkspaceMembers";
+import { useAuth } from "@/hooks/useAuth";
  
  const priorityColors: Record<string, string> = {
    critical: "bg-destructive text-destructive-foreground",
@@ -49,20 +50,21 @@
    const [deleteId, setDeleteId] = useState<string | null>(null);
    const [selectedTestCase, setSelectedTestCase] = useState<any>(null);
  
-   const { toast } = useToast();
+    const { toast } = useToast();
+    const { user } = useAuth();
    const { data: projects, isLoading: projectsLoading } = useProjects();
    const currentProjectId = selectedProject || projects?.[0]?.id || "";
    const currentProject = projects?.find((p) => p.id === currentProjectId);
  
    const {
-     testCases, isLoading, createTestCase, updateTestCase, deleteTestCase,
-     bulkCreateTestCases, submitForReview, markReadyForExecution
-   } = useTestCases(currentProjectId);
+      testCases, isLoading, createTestCase, updateTestCase, deleteTestCase,
+      bulkCreateTestCases, submitForReview, approveTestCase, markReadyForExecution
+    } = useTestCases(currentProjectId);
  
    const { folderTree, createFolder, renameFolder, deleteFolder } = useTestFoldersDB(currentProjectId);
-   const { reviews } = useTestCaseReviews(selectedTestCase?.id);
-   const { data: versions } = useTestCaseVersions(selectedTestCase?.id);
-   const { data: workspaceMembers } = useWorkspaceMembers(currentProject?.workspace_id);
+    const { reviews, assignReviewer, submitReview } = useTestCaseReviews(selectedTestCase?.id);
+    const { data: versions } = useTestCaseVersions(selectedTestCase?.id);
+    const { data: workspaceMembers } = useWorkspaceMembers(currentProject?.workspace_id);
  
    const handleCreateTestCase = async (data: any) => {
      if (!currentProjectId) {
@@ -86,11 +88,37 @@
      setDeleteId(null);
    };
  
-   const handleSubmitForReview = async () => {
-     if (!selectedTestCase) return;
-     await submitForReview.mutateAsync(selectedTestCase.id);
-     setSelectedTestCase(null);
-   };
+    const handleSubmitForReview = async () => {
+      if (!selectedTestCase) return;
+      await submitForReview.mutateAsync(selectedTestCase.id);
+      setSelectedTestCase(null);
+    };
+
+    const handleAssignReviewer = (reviewerId: string) => {
+      if (!selectedTestCase) return;
+      assignReviewer.mutate({
+        testCaseId: selectedTestCase.id,
+        reviewerId,
+        version: selectedTestCase.version || 1,
+      });
+    };
+
+    const handleSubmitReviewDecision = async (reviewId: string, decision: "approved" | "changes_required", comments: string) => {
+      await submitReview.mutateAsync({ reviewId, status: decision, comments });
+      setSelectedTestCase(null);
+    };
+
+    const handleApprove = async () => {
+      if (!selectedTestCase) return;
+      await approveTestCase.mutateAsync(selectedTestCase.id);
+      setSelectedTestCase(null);
+    };
+
+    const handleMarkReady = async () => {
+      if (!selectedTestCase) return;
+      await markReadyForExecution.mutateAsync(selectedTestCase.id);
+      setSelectedTestCase(null);
+    };
  
    const handleBulkImport = async (importedCases: any[]) => {
      if (!currentProjectId) {
@@ -161,13 +189,17 @@
            onSubmit={handleCreateTestCase} isSubmitting={createTestCase.isPending}
            selectedFolderId={selectedFolderId}
          />
-         <TestCaseDetailDialog
-           testCase={selectedTestCase} open={!!selectedTestCase}
-           onOpenChange={(open) => !open && setSelectedTestCase(null)}
-           onUpdate={handleUpdateTestCase} onSubmitForReview={handleSubmitForReview}
-           isUpdating={updateTestCase.isPending}
-           workspaceMembers={workspaceMembers} reviews={reviews} versions={versions || []}
-         />
+          <TestCaseDetailDialog
+            testCase={selectedTestCase} open={!!selectedTestCase}
+            onOpenChange={(open) => !open && setSelectedTestCase(null)}
+            onUpdate={handleUpdateTestCase} onSubmitForReview={handleSubmitForReview}
+            onApprove={handleApprove} onMarkReady={handleMarkReady}
+            isUpdating={updateTestCase.isPending}
+            currentUserId={user?.id}
+            workspaceMembers={workspaceMembers} reviews={reviews} versions={versions || []}
+            onAssignReviewer={handleAssignReviewer}
+            onSubmitReviewDecision={handleSubmitReviewDecision}
+          />
          <ConfirmDialog
            open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}
            title="Delete Test Case"
