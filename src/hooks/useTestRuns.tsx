@@ -30,6 +30,8 @@ export interface CreateTestRunInput {
   description?: string;
   project_id: string;
   test_case_ids: string[];
+  environment?: string;
+  build_version?: string;
 }
 
 export function useTestRuns(projectId?: string) {
@@ -93,7 +95,9 @@ export function useTestRuns(projectId?: string) {
           project_id: input.project_id,
           created_by: user.id,
           status: "pending",
-        })
+          ...(input.environment ? { environment: input.environment } : {}),
+          ...(input.build_version ? { build_version: input.build_version } : {}),
+        } as any)
         .select()
         .single();
 
@@ -189,22 +193,30 @@ export function useTestRuns(projectId?: string) {
     mutationFn: async ({ 
       executionId, 
       status, 
-      notes 
+      notes,
+      environment,
+      build_version,
     }: { 
       executionId: string; 
       status: string; 
       notes?: string;
+      environment?: string;
+      build_version?: string;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
+      const updateData: Record<string, any> = {
+        status,
+        notes: notes || null,
+        executed_by: user.id,
+        executed_at: new Date().toISOString(),
+      };
+      if (environment) updateData.environment = environment;
+      if (build_version) updateData.build_version = build_version;
+
       const { data, error } = await supabase
         .from("test_executions")
-        .update({
-          status,
-          notes: notes || null,
-          executed_by: user.id,
-          executed_at: new Date().toISOString(),
-        })
+        .update(updateData as any)
         .eq("id", executionId)
         .select(`
           *,

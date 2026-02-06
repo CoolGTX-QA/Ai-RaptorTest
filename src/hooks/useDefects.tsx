@@ -14,10 +14,13 @@ export interface CreateDefectInput {
   title: string;
   description?: string;
   severity?: string;
+  priority?: string;
   status?: string;
   assigned_to?: string;
   project_id: string;
   test_execution_id?: string;
+  linked_test_case_id?: string;
+  steps_to_reproduce?: string;
 }
 
 export interface UpdateDefectInput {
@@ -81,12 +84,15 @@ export function useDefects(projectId?: string) {
           title: input.title,
           description: input.description || null,
           severity: input.severity || "medium",
+          priority: input.priority || null,
           status: input.status || "open",
           assigned_to: input.assigned_to || null,
           project_id: input.project_id,
           test_execution_id: input.test_execution_id || null,
+          linked_test_case_id: input.linked_test_case_id || null,
+          steps_to_reproduce: input.steps_to_reproduce || null,
           reported_by: user.id,
-        })
+        } as any)
         .select()
         .single();
 
