@@ -1,90 +1,73 @@
 
-# Project Health Progress Bar for Dashboard
 
-## Overview
-Add a visual Project Health progress bar for each project displayed in the "All Projects" section of the Dashboard. The health will be calculated based on test execution pass rates.
+## Plan: Team Lead / Manager Capabilities Enhancement
 
-## What is Project Health?
-Project Health represents the percentage of **passed test executions** compared to all executed tests for that project. A higher percentage indicates better quality.
+### Current State
+The codebase already has:
+- RBAC with admin/manager/tester/viewer roles (`useRBAC`)
+- Reviewer assignment in TestCaseDetailDialog (managers can assign reviewers when status is `submitted_for_review`)
+- Test run creation with test case selection
+- Basic execution stats (passed/failed/blocked/not_run per run)
+- Notifications system
 
-- **100% Health**: All executed tests passed
-- **0% Health**: No tests passed (or no tests executed yet)
-- **Color coding**: Green (good), Yellow (moderate), Red (needs attention)
+### What's Missing
+1. **Assign test cases for execution to specific testers** - Test executions have an `assigned_to` column but it's never populated via UI
+2. **Manager progress/metrics dashboard** - No dedicated manager view showing review queue, execution progress per tester, team productivity
+3. **Configurable final approval before execution** - The approve → ready flow exists but isn't role-gated to managers only
 
----
+### Implementation Plan
 
-## Implementation Steps
+#### 1. Assign Testers to Executions in Test Runs
+**Files:** `src/pages/TestExecution.tsx`, `src/hooks/useTestRuns.tsx`
 
-### 1. Update Project Interface
-Add health-related fields to track each project's test execution statistics:
-- `passedCount`: Number of passed test executions
-- `totalExecuted`: Total number of executed tests (excluding "not_run")
-- `healthPercentage`: Calculated pass rate
+- In the Create Test Run dialog, add an "Assign To" dropdown per test case (or bulk assign) using workspace members
+- Pass `assigned_to` when creating `test_executions` rows
+- Show assigned tester name in the execution table
+- Add an "Assign" action button in execution rows for post-creation assignment
+- Add `assignExecution` mutation to `useTestRuns` hook
 
-### 2. Enhance Data Fetching
-Modify `fetchDashboardData` to:
-- Query `test_runs` for each project
-- Query `test_executions` to count passed vs total executed
-- Calculate health percentage per project
+#### 2. Manager Progress Dashboard
+**File:** Create `src/components/test-execution/ManagerDashboard.tsx`
 
-### 3. Create Health Progress Bar UI
-For each project card, display:
-- A compact progress bar showing health percentage
-- Color-coded indicator (green/yellow/red based on thresholds)
-- Percentage text label
-- Fallback display for projects with no test data
+- Add a collapsible "Manager View" section at the top of Test Execution page (visible only to manager+ roles)
+- Cards showing: Review Queue (pending reviews count), Execution Progress (by tester), Overall Pass Rate, Blocked Items
+- A table showing tester-level breakdown: tester name, assigned count, completed count, pass rate
+- Use existing query data from `useTestRuns` and `useTestCases`
 
----
+#### 3. Role-Gate Approve & Mark Ready Actions
+**Files:** `src/pages/TestRepository.tsx`, `src/components/test-cases/TestCaseDetailDialog.tsx`
 
-## Visual Design
+- Pass `useRBAC` role info into `TestCaseDetailDialog`
+- Only show "Approve" button if user has manager+ role
+- Only show "Mark Ready for Execution" if user has manager+ role
+- Add configurable setting: if project setting `require_manager_approval` is true, enforce manager-only approval; otherwise allow any tester+ to approve
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  [Avatar]  Project Name                                     │
-│            Workspace Name                                   │
-│                                                             │
-│            Health: ████████░░░░░░░░ 72%       [Active]  →  │
-│                    ↑ Green/Yellow/Red bar                   │
-└─────────────────────────────────────────────────────────────┘
-```
+#### 4. Bulk Assign Reviewer in Test Repository
+**File:** `src/pages/TestRepository.tsx`
 
-**Color Thresholds:**
-- Green (Success): 70% and above
-- Yellow (Warning): 40-69%
-- Red (Destructive): Below 40%
+- Add multi-select checkboxes to test case rows
+- Add bulk action bar: "Assign Reviewer" for selected test cases in `submitted_for_review` status
+- Manager can select a reviewer from workspace members dropdown and apply to all selected
 
----
+#### 5. Track Progress & Metrics in Test Repository
+**File:** `src/pages/TestRepository.tsx`
 
-## Technical Details
+- Enhance existing stats cards with: "Pending My Review" count (for managers), "Awaiting Approval" count
+- Add a mini progress bar showing lifecycle funnel: Draft → In Review → Approved → Ready
 
-### Data Query Strategy
-```
-For each project:
-1. Get test_runs where project_id = project.id
-2. Get test_executions where test_run_id in [run_ids]
-3. Count: status = 'passed' → passedCount
-4. Count: status != 'not_run' → totalExecuted
-5. Calculate: (passedCount / totalExecuted) × 100
-```
+### Technical Details
 
-### Files to Modify
+- `test_executions.assigned_to` column already exists in DB — just needs UI wiring
+- RBAC checks use `useRBAC(workspaceId)` with `hasMinRole('manager')` 
+- Notifications already fire on reviewer assignment and submission — extend to fire on execution assignment
+- No DB migrations needed — all required columns exist
 
-| File | Changes |
-|------|---------|
-| `src/pages/Dashboard.tsx` | Add health data fetching, update Project interface, render Progress bar with color coding |
+### Files to Create/Edit
+| File | Action |
+|------|--------|
+| `src/pages/TestExecution.tsx` | Add assign-to-tester UI in create dialog and execution table |
+| `src/hooks/useTestRuns.tsx` | Add `assignExecution` mutation |
+| `src/pages/TestRepository.tsx` | Add bulk actions, role-gated buttons, enhanced stats |
+| `src/components/test-cases/TestCaseDetailDialog.tsx` | Role-gate approve/ready buttons via new prop |
+| `src/components/test-execution/ManagerDashboard.tsx` | New — manager metrics panel |
 
-### UI Components Used
-- `Progress` from `@/components/ui/progress` (already available)
-- Custom color classes for health thresholds
-
-### Performance Consideration
-The health calculation will be done in a batch query approach to minimize database calls - fetching all test runs and executions for user's projects in one go, then mapping to individual projects client-side.
-
----
-
-## Edge Cases Handled
-
-1. **No test runs**: Show "No tests" label instead of progress bar
-2. **All tests "not_run"**: Show 0% with appropriate messaging
-3. **Loading state**: Skeleton placeholder for progress bar
-4. **New projects**: Graceful fallback display
