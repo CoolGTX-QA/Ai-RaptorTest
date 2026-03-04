@@ -69,6 +69,7 @@ interface TestCaseDetailDialogProps {
   isUpdating?: boolean;
   isReadOnly?: boolean;
   currentUserId?: string;
+  isManager?: boolean;
   workspaceMembers?: Array<{ id: string; user_id: string; role?: string; profile?: { full_name: string | null; email: string } }>;
   onAssignReviewer?: (reviewerId: string) => void;
   onSubmitReviewDecision?: (reviewId: string, decision: "approved" | "changes_required", comments: string) => Promise<void>;
@@ -99,6 +100,7 @@ export function TestCaseDetailDialog({
   isUpdating,
   isReadOnly,
   currentUserId,
+  isManager = false,
   workspaceMembers = [],
   onAssignReviewer,
   onSubmitReviewDecision,
@@ -444,14 +446,14 @@ export function TestCaseDetailDialog({
                     <Send className="h-4 w-4 mr-2" />Resubmit for Review
                   </Button>
                 )}
-                {/* Reviewed → Approve */}
-                {testCase.status === "reviewed" && onApprove && (
+                {/* Reviewed → Approve (manager+ only) */}
+                {testCase.status === "reviewed" && onApprove && isManager && (
                   <Button variant="secondary" onClick={onApprove}>
                     <CheckCircle className="h-4 w-4 mr-2" />Approve
                   </Button>
                 )}
-                {/* Approved → Mark Ready for Execution */}
-                {testCase.status === "approved" && onMarkReady && (
+                {/* Approved → Mark Ready for Execution (manager+ only) */}
+                {testCase.status === "approved" && onMarkReady && isManager && (
                   <Button variant="secondary" onClick={onMarkReady}>
                     <Play className="h-4 w-4 mr-2" />Mark Ready for Execution
                   </Button>

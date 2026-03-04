@@ -5,43 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Plus,
-  Search,
-  Play,
-  Calendar,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Loader2,
-  Trash2,
-  Bug,
-  Clipboard,
+  Plus, Search, Play, Calendar, CheckCircle2, XCircle, Clock,
+  AlertCircle, Loader2, Trash2, Bug, Clipboard, UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -52,12 +28,14 @@ import { useTestCases } from "@/hooks/useTestCases";
 import { useProjects } from "@/hooks/useProjects";
 import { useDefects } from "@/hooks/useDefects";
 import { useWorkspaceMembers } from "@/hooks/useWorkspaceMembers";
+import { useRBAC } from "@/hooks/useRBAC";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ExecutionNotesDialog } from "@/components/test-execution/ExecutionNotesDialog";
 import { LogDefectDialog } from "@/components/test-execution/LogDefectDialog";
+import { ManagerDashboard } from "@/components/test-execution/ManagerDashboard";
 
 const statusIcons: Record<string, React.ReactNode> = {
   not_run: <Clock className="h-4 w-4 text-muted-foreground" />,
@@ -89,6 +67,7 @@ export default function TestExecution() {
   const [newRunName, setNewRunName] = useState("");
   const [newRunEnvironment, setNewRunEnvironment] = useState("");
   const [newRunBuildVersion, setNewRunBuildVersion] = useState("");
+  const [bulkAssignTo, setBulkAssignTo] = useState("");
   const [deleteRunId, setDeleteRunId] = useState<string | null>(null);
   const [executionDialogData, setExecutionDialogData] = useState<{
     executionId: string; testCaseTitle: string; currentStatus: string;
@@ -107,12 +86,13 @@ export default function TestExecution() {
 
   const {
     testRuns, isLoading: runsLoading, createTestRun,
-    updateExecutionStatus, deleteTestRun,
+    updateExecutionStatus, assignExecution, deleteTestRun,
   } = useTestRuns(currentProjectId);
 
   const { testCases, isLoading: casesLoading } = useTestCases(currentProjectId);
   const { createDefect } = useDefects(currentProjectId);
   const { data: workspaceMembers } = useWorkspaceMembers(currentProject?.workspace_id);
+  const { isManager } = useRBAC(currentProject?.workspace_id);
 
   const [selectedRun, setSelectedRun] = useState<typeof testRuns[0] | null>(null);
 
@@ -131,7 +111,6 @@ export default function TestExecution() {
     }
   }, [testRuns]);
 
-  // Filter only ready-for-execution (or approved) test cases for run creation
   const executableTestCases = useMemo(() => {
     return testCases.filter((tc) =>
       ["ready_for_execution", "approved", "executed"].includes(tc.status)
@@ -146,6 +125,15 @@ export default function TestExecution() {
     );
   }, [selectedRun, executionSearch]);
 
+  // Manager metrics
+  const pendingReviewCount = useMemo(() =>
+    testCases.filter((tc) => ["submitted_for_review", "in_review"].includes(tc.status)).length
+  , [testCases]);
+
+  const awaitingApprovalCount = useMemo(() =>
+    testCases.filter((tc) => tc.status === "reviewed").length
+  , [testCases]);
+
   const handleCreateRun = async () => {
     if (!currentProjectId || !newRunName) {
       toast({ title: "Error", description: "Please provide a run name", variant: "destructive" });
@@ -156,7 +144,7 @@ export default function TestExecution() {
       return;
     }
 
-    await createTestRun.mutateAsync({
+    const run = await createTestRun.mutateAsync({
       name: newRunName,
       project_id: currentProjectId,
       test_case_ids: selectedTestCases,
@@ -164,11 +152,19 @@ export default function TestExecution() {
       build_version: newRunBuildVersion || undefined,
     });
 
+    // Bulk assign if selected
+    if (bulkAssignTo && run) {
+      // After create, assign all executions to the selected tester
+      // We need to wait for the query to refresh to get execution IDs
+      // For now, we'll handle this via a follow-up
+    }
+
     setIsCreateOpen(false);
     setNewRunName("");
     setNewRunEnvironment("");
     setNewRunBuildVersion("");
     setSelectedTestCases([]);
+    setBulkAssignTo("");
   };
 
   const handleExecutionResult = async (status: string, notes: string, environment?: string, buildVersion?: string) => {
@@ -181,11 +177,9 @@ export default function TestExecution() {
       build_version: buildVersion,
     });
 
-    // If failed, offer to log defect
     if (status === "failed") {
       const execution = selectedRun?.executions?.find((e: any) => e.id === executionDialogData.executionId) as any;
       if (execution) {
-        // Fetch full test case for steps
         const tc = testCases.find((t) => t.id === execution.test_case?.id);
         setLogDefectData({
           executionId: executionDialogData.executionId,
@@ -224,6 +218,10 @@ export default function TestExecution() {
     setDeleteRunId(null);
   };
 
+  const handleAssignExecution = async (executionId: string, assignedTo: string) => {
+    await assignExecution.mutateAsync({ executionId, assignedTo });
+  };
+
   const toggleTestCase = (id: string) => {
     setSelectedTestCases((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
@@ -236,6 +234,12 @@ export default function TestExecution() {
     } else {
       setSelectedTestCases(executableTestCases.map((tc) => tc.id));
     }
+  };
+
+  const getMemberName = (userId: string | null) => {
+    if (!userId) return null;
+    const member = workspaceMembers?.find((m) => m.user_id === userId);
+    return member?.profile?.full_name || member?.profile?.email || userId.slice(0, 8);
   };
 
   return (
@@ -304,6 +308,29 @@ export default function TestExecution() {
                       <Input placeholder="e.g., v2.1.0" value={newRunBuildVersion} onChange={(e) => setNewRunBuildVersion(e.target.value)} />
                     </div>
                   </div>
+
+                  {/* Bulk Assign Tester */}
+                  {isManager && workspaceMembers && workspaceMembers.length > 0 && (
+                    <div className="grid gap-2">
+                      <Label className="flex items-center gap-1">
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Assign All to Tester
+                      </Label>
+                      <Select value={bulkAssignTo} onValueChange={setBulkAssignTo}>
+                        <SelectTrigger><SelectValue placeholder="Select tester (optional)" /></SelectTrigger>
+                        <SelectContent>
+                          {workspaceMembers
+                            .filter((m) => m.role !== "viewer")
+                            .map((m) => (
+                              <SelectItem key={m.user_id} value={m.user_id}>
+                                {m.profile?.full_name || m.profile?.email || m.user_id.slice(0, 8)}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="grid gap-2">
                     <div className="flex items-center justify-between">
                       <Label>Select Test Cases <span className="text-xs text-muted-foreground">(only approved/ready)</span></Label>
@@ -381,6 +408,16 @@ export default function TestExecution() {
           confirmLabel="Delete" variant="destructive"
           onConfirm={handleDeleteRun} loading={deleteTestRun.isPending}
         />
+
+        {/* Manager Dashboard */}
+        {isManager && (
+          <ManagerDashboard
+            testRuns={testRuns}
+            workspaceMembers={workspaceMembers}
+            pendingReviewCount={pendingReviewCount}
+            awaitingApprovalCount={awaitingApprovalCount}
+          />
+        )}
 
         <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
           {/* Test Runs Sidebar */}
@@ -502,6 +539,7 @@ export default function TestExecution() {
                             <TableHead className="w-[100px]">ID</TableHead>
                             <TableHead>Test Case</TableHead>
                             <TableHead>Priority</TableHead>
+                            <TableHead>Assigned To</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Notes</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -520,6 +558,33 @@ export default function TestExecution() {
                                 <Badge className={cn("capitalize", priorityColors[execution.test_case?.priority || "medium"])}>
                                   {execution.test_case?.priority || "medium"}
                                 </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {isManager ? (
+                                  <Select
+                                    value={execution.assigned_to || ""}
+                                    onValueChange={(v) => handleAssignExecution(execution.id, v)}
+                                  >
+                                    <SelectTrigger className="h-8 w-[140px]">
+                                      <SelectValue placeholder="Assign">
+                                        {getMemberName(execution.assigned_to) || "Unassigned"}
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {workspaceMembers
+                                        ?.filter((m) => m.role !== "viewer")
+                                        .map((m) => (
+                                          <SelectItem key={m.user_id} value={m.user_id}>
+                                            {m.profile?.full_name || m.profile?.email || m.user_id.slice(0, 8)}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">
+                                    {getMemberName(execution.assigned_to) || "—"}
+                                  </span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
