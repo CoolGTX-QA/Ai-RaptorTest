@@ -249,6 +249,27 @@ export function useTestRuns(projectId?: string) {
     },
   });
 
+  const assignExecution = useMutation({
+    mutationFn: async ({ executionId, assignedTo }: { executionId: string; assignedTo: string }) => {
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase
+        .from("test_executions")
+        .update({ assigned_to: assignedTo } as any)
+        .eq("id", executionId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-runs"] });
+      toast({ title: "Tester assigned", description: "Test execution has been assigned." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteTestRun = useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error("Not authenticated");
@@ -291,6 +312,7 @@ export function useTestRuns(projectId?: string) {
     createTestRun,
     updateTestRunStatus,
     updateExecutionStatus,
+    assignExecution,
     deleteTestRun,
     refetch: testRunsQuery.refetch,
   };
