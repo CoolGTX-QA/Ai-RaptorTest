@@ -68,6 +68,206 @@ export type Database = {
           },
         ]
       }
+      autonomous_test_apis: {
+        Row: {
+          api_name: string
+          auth_config: Json | null
+          auth_type: string
+          autonomous_project_id: string
+          created_at: string
+          doc_url: string | null
+          endpoint_url: string
+          extra_info: string | null
+          id: string
+        }
+        Insert: {
+          api_name: string
+          auth_config?: Json | null
+          auth_type?: string
+          autonomous_project_id: string
+          created_at?: string
+          doc_url?: string | null
+          endpoint_url: string
+          extra_info?: string | null
+          id?: string
+        }
+        Update: {
+          api_name?: string
+          auth_config?: Json | null
+          auth_type?: string
+          autonomous_project_id?: string
+          created_at?: string
+          doc_url?: string | null
+          endpoint_url?: string
+          extra_info?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomous_test_apis_autonomous_project_id_fkey"
+            columns: ["autonomous_project_id"]
+            isOneToOne: false
+            referencedRelation: "autonomous_test_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autonomous_test_cases: {
+        Row: {
+          autonomous_project_id: string
+          cause: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          executed_at: string | null
+          fix_suggestion: string | null
+          generated_script: string | null
+          id: string
+          is_enabled: boolean
+          priority: string
+          status: string
+          test_description: string | null
+          test_name: string
+          test_number: number
+          test_type: string
+          trace: string | null
+          updated_at: string
+        }
+        Insert: {
+          autonomous_project_id: string
+          cause?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          executed_at?: string | null
+          fix_suggestion?: string | null
+          generated_script?: string | null
+          id?: string
+          is_enabled?: boolean
+          priority?: string
+          status?: string
+          test_description?: string | null
+          test_name: string
+          test_number: number
+          test_type?: string
+          trace?: string | null
+          updated_at?: string
+        }
+        Update: {
+          autonomous_project_id?: string
+          cause?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          executed_at?: string | null
+          fix_suggestion?: string | null
+          generated_script?: string | null
+          id?: string
+          is_enabled?: boolean
+          priority?: string
+          status?: string
+          test_description?: string | null
+          test_name?: string
+          test_number?: number
+          test_type?: string
+          trace?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomous_test_cases_autonomous_project_id_fkey"
+            columns: ["autonomous_project_id"]
+            isOneToOne: false
+            referencedRelation: "autonomous_test_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autonomous_test_projects: {
+        Row: {
+          base_url: string
+          created_at: string
+          created_by: string
+          id: string
+          project_id: string
+          status: string
+          test_name: string
+          updated_at: string
+        }
+        Insert: {
+          base_url: string
+          created_at?: string
+          created_by: string
+          id?: string
+          project_id: string
+          status?: string
+          test_name: string
+          updated_at?: string
+        }
+        Update: {
+          base_url?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          project_id?: string
+          status?: string
+          test_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomous_test_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      autonomous_test_urls: {
+        Row: {
+          autonomous_project_id: string
+          created_at: string
+          doc_url: string | null
+          extra_instructions: string | null
+          id: string
+          login_email: string | null
+          login_password: string | null
+          start_url: string
+          url_name: string
+        }
+        Insert: {
+          autonomous_project_id: string
+          created_at?: string
+          doc_url?: string | null
+          extra_instructions?: string | null
+          id?: string
+          login_email?: string | null
+          login_password?: string | null
+          start_url: string
+          url_name: string
+        }
+        Update: {
+          autonomous_project_id?: string
+          created_at?: string
+          doc_url?: string | null
+          extra_instructions?: string | null
+          id?: string
+          login_email?: string | null
+          login_password?: string | null
+          start_url?: string
+          url_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autonomous_test_urls_autonomous_project_id_fkey"
+            columns: ["autonomous_project_id"]
+            isOneToOne: false
+            referencedRelation: "autonomous_test_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       defects: {
         Row: {
           actual_result: string | null
