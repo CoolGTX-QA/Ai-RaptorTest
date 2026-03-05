@@ -34,6 +34,7 @@ import ActivityLog from "./pages/ActivityLog";
 import AcceptInvite from "./pages/AcceptInvite";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import AutonomousTesting from "./pages/AutonomousTesting";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/test-repository" element={<ProtectedRoute><TestRepository /></ProtectedRoute>} />
             <Route path="/test-execution" element={<ProtectedRoute><TestExecution /></ProtectedRoute>} />
             <Route path="/ai-generation" element={<ProtectedRoute><AIGeneration /></ProtectedRoute>} />
+            <Route path="/autonomous-testing" element={<ProtectedRoute><AutonomousTesting /></ProtectedRoute>} />
             <Route path="/risk-assessment" element={<ProtectedRoute><RiskAssessment /></ProtectedRoute>} />
             <Route path="/risk-assessment/scoring" element={<ProtectedRoute><RiskScoring /></ProtectedRoute>} />
             <Route path="/risk-assessment/predictions" element={<ProtectedRoute><RiskPredictions /></ProtectedRoute>} />

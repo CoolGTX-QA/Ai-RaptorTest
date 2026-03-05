@@ -51,6 +51,7 @@ const menuItems = {
   ],
   aiTools: [
     { title: "AI Test Generation", url: "/ai-generation", icon: Sparkles },
+    { title: "Autonomous Testing", url: "/autonomous-testing", icon: Activity },
   ],
   reports: [
     { title: "Reports Overview", url: "/reports", icon: BarChart3 },
