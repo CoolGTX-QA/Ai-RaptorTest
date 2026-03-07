@@ -209,8 +209,8 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
 
           {/* CENTER: Execution Preview */}
           <div className="col-span-5">
-            <Card className="h-full flex flex-col">
-              <CardHeader className="py-3 px-4 flex-row items-center justify-between">
+            <Card className="h-full flex flex-col overflow-hidden">
+              <CardHeader className="py-3 px-4 flex-row items-center justify-between shrink-0">
                 <CardTitle className="text-sm">
                   {selectedTest ? selectedTest.test_name : "Select a test"}
                 </CardTitle>
@@ -220,51 +220,64 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                   </Button>
                 )}
               </CardHeader>
-              <CardContent className="flex-1 overflow-hidden p-0">
-                {selectedTest && (
-                  <Tabs value={resultTab} onValueChange={setResultTab} className="h-full flex flex-col">
-                    <TabsList className="mx-4 mt-0">
-                      <TabsTrigger value="script"><Code className="h-3 w-3 mr-1" />Script</TabsTrigger>
-                      <TabsTrigger value="error" disabled={selectedTest.status !== "failed"}>
-                        <AlertTriangle className="h-3 w-3 mr-1" />Error
-                      </TabsTrigger>
-                      <TabsTrigger value="trace" disabled={selectedTest.status !== "failed"}>Trace</TabsTrigger>
-                      <TabsTrigger value="cause" disabled={selectedTest.status !== "failed"}>Cause</TabsTrigger>
-                      <TabsTrigger value="fix" disabled={selectedTest.status !== "failed"}>Fix</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="script" className="flex-1 m-0 p-4">
-                      <ScrollArea className="h-full">
-                        <pre className="text-xs font-mono bg-muted/50 rounded-lg p-4 text-foreground overflow-x-auto whitespace-pre">
-                          {getScript(selectedTest)}
-                        </pre>
-                      </ScrollArea>
-                    </TabsContent>
-                    <TabsContent value="error" className="flex-1 m-0 p-4">
-                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                        <p className="text-sm text-destructive font-medium">Error</p>
-                        <p className="text-sm text-foreground mt-2">{selectedTest.error_message || "No error"}</p>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="trace" className="flex-1 m-0 p-4">
-                      <pre className="text-xs font-mono bg-muted/50 rounded-lg p-4 text-foreground whitespace-pre-wrap">
-                        {selectedTest.trace || "No trace available"}
-                      </pre>
-                    </TabsContent>
-                    <TabsContent value="cause" className="flex-1 m-0 p-4">
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <p className="text-sm font-medium text-foreground">Root Cause</p>
-                        <p className="text-sm text-muted-foreground mt-2">{selectedTest.cause || "Not determined"}</p>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="fix" className="flex-1 m-0 p-4">
-                      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                        <p className="text-sm font-medium text-primary">Suggested Fix</p>
-                        <p className="text-sm text-foreground mt-2">{selectedTest.fix_suggestion || "No suggestion"}</p>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </CardContent>
+              <div className="flex-1 overflow-hidden">
+                <ResizablePanelGroup direction="vertical">
+                  <ResizablePanel defaultSize={55} minSize={30}>
+                    <BrowserPreview
+                      baseUrl={autonomousProject.base_url}
+                      testName={selectedTest?.test_name || null}
+                      testStatus={selectedTest?.status || "draft"}
+                      isRunning={selectedTest ? runningTests.has(selectedTest.id) : false}
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={45} minSize={20}>
+                    {selectedTest && (
+                      <Tabs value={resultTab} onValueChange={setResultTab} className="h-full flex flex-col">
+                        <TabsList className="mx-4 mt-2">
+                          <TabsTrigger value="script"><Code className="h-3 w-3 mr-1" />Script</TabsTrigger>
+                          <TabsTrigger value="error" disabled={selectedTest.status !== "failed"}>
+                            <AlertTriangle className="h-3 w-3 mr-1" />Error
+                          </TabsTrigger>
+                          <TabsTrigger value="trace" disabled={selectedTest.status !== "failed"}>Trace</TabsTrigger>
+                          <TabsTrigger value="cause" disabled={selectedTest.status !== "failed"}>Cause</TabsTrigger>
+                          <TabsTrigger value="fix" disabled={selectedTest.status !== "failed"}>Fix</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="script" className="flex-1 m-0 p-4 overflow-hidden">
+                          <ScrollArea className="h-full">
+                            <pre className="text-xs font-mono bg-muted/50 rounded-lg p-4 text-foreground overflow-x-auto whitespace-pre">
+                              {getScript(selectedTest)}
+                            </pre>
+                          </ScrollArea>
+                        </TabsContent>
+                        <TabsContent value="error" className="flex-1 m-0 p-4">
+                          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                            <p className="text-sm text-destructive font-medium">Error</p>
+                            <p className="text-sm text-foreground mt-2">{selectedTest.error_message || "No error"}</p>
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="trace" className="flex-1 m-0 p-4">
+                          <pre className="text-xs font-mono bg-muted/50 rounded-lg p-4 text-foreground whitespace-pre-wrap">
+                            {selectedTest.trace || "No trace available"}
+                          </pre>
+                        </TabsContent>
+                        <TabsContent value="cause" className="flex-1 m-0 p-4">
+                          <div className="bg-muted/50 rounded-lg p-4">
+                            <p className="text-sm font-medium text-foreground">Root Cause</p>
+                            <p className="text-sm text-muted-foreground mt-2">{selectedTest.cause || "Not determined"}</p>
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="fix" className="flex-1 m-0 p-4">
+                          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                            <p className="text-sm font-medium text-primary">Suggested Fix</p>
+                            <p className="text-sm text-foreground mt-2">{selectedTest.fix_suggestion || "No suggestion"}</p>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    )}
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </div>
             </Card>
           </div>
 
