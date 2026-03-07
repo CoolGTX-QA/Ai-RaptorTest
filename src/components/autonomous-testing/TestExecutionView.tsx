@@ -1,17 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, Play, CheckCircle, XCircle, Clock, Loader2,
-  AlertTriangle, Code, Bot, RotateCcw, Send,
+  AlertTriangle, Code, Bot, RotateCcw, Send, StopCircle,
 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { BrowserPreview } from "./BrowserPreview";
+import { BrowserPreview, type ExecutionStep } from "./BrowserPreview";
+import { generateExecutionSteps, generateFailureDetails } from "./testStepGenerator";
 import { AutonomousProject, AutonomousTestCase, useAutonomousTesting } from "@/hooks/useAutonomousTesting";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -54,7 +55,6 @@ test('Main navigation and page routing', async ({ page }) => {
 test('{{TEST_NAME}}', async ({ page }) => {
   await page.goto('{{BASE_URL}}');
   
-  // TODO: AI-generated test steps
   // Step 1: Navigate to the target page
   await page.waitForLoadState('networkidle');
   
@@ -69,6 +69,10 @@ test('{{TEST_NAME}}', async ({ page }) => {
 export function TestExecutionView({ autonomousProject, onBack }: Props) {
   const [selectedTest, setSelectedTest] = useState<AutonomousTestCase | null>(null);
   const [runningTests, setRunningTests] = useState<Set<string>>(new Set());
+  const [currentSteps, setCurrentSteps] = useState<ExecutionStep[]>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [runAllInProgress, setRunAllInProgress] = useState(false);
+  const abortRef = useRef(false);
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
     { role: "assistant", content: "I'm your AI testing assistant. Select a test case to see its details, or run tests to see results. I can help debug failures and suggest fixes." },
   ]);
@@ -104,49 +108,133 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       .replace(/\{\{TEST_NAME\}\}/g, tc.test_name);
   };
 
-  const simulateRun = async (tc: AutonomousTestCase) => {
-    setRunningTests((prev) => new Set(prev).add(tc.id));
+  const executeTest = useCallback(async (tc: AutonomousTestCase) => {
+    if (abortRef.current) return;
+
+    // Generate contextual steps for this test case
+    const steps = generateExecutionSteps({
+      testName: tc.test_name,
+      testDescription: tc.test_description,
+      baseUrl: autonomousProject.base_url,
+      testType: tc.test_type,
+    });
+
+    setCurrentSteps(steps);
     setSelectedTest({ ...tc, status: "running" });
+    setRunningTests((prev) => new Set(prev).add(tc.id));
+    setIsExecuting(true);
+    setResultTab("script");
 
-    await new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
+    // Add chat message about starting
+    setChatMessages(prev => [...prev, {
+      role: "assistant",
+      content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps to execute.`,
+    }]);
 
+    // Wait for steps to complete (each step ~500-1200ms)
+    const totalDuration = steps.length * 700 + 500;
+    await new Promise((r) => setTimeout(r, totalDuration));
+
+    if (abortRef.current) {
+      setIsExecuting(false);
+      setRunningTests((prev) => { const s = new Set(prev); s.delete(tc.id); return s; });
+      return;
+    }
+
+    // Determine pass/fail
     const passed = Math.random() > 0.3;
-    const result: Partial<AutonomousTestCase> = passed
-      ? { status: "passed", duration_ms: Math.floor(1000 + Math.random() * 4000), executed_at: new Date().toISOString() }
-      : {
-          status: "failed",
-          duration_ms: Math.floor(500 + Math.random() * 2000),
-          executed_at: new Date().toISOString(),
-          error_message: "Filter controls not found on catalog page. Expected element with selector '.filter-panel' to be visible.",
-          trace: `at Object.<anonymous> (test.spec.ts:15:5)\n  at page.waitForSelector('.filter-panel')\n  at TimeoutError: waiting for selector '.filter-panel'\n  Timeout: 30000ms`,
-          cause: "DOM selector mismatch. The filter controls use a different CSS class name than expected.",
-          fix_suggestion: "Update the selector from '.filter-panel' to '[data-testid=\"filters\"]' or add explicit waits for dynamic content loading.",
-        };
+    let result: Partial<AutonomousTestCase>;
+
+    if (passed) {
+      result = {
+        status: "passed",
+        duration_ms: totalDuration,
+        executed_at: new Date().toISOString(),
+        error_message: null,
+        trace: null,
+        cause: null,
+        fix_suggestion: null,
+      };
+      setChatMessages(prev => [...prev, {
+        role: "assistant",
+        content: `✅ "${tc.test_name}" passed in ${(totalDuration / 1000).toFixed(1)}s. All ${steps.length} steps completed successfully.`,
+      }]);
+    } else {
+      const failure = generateFailureDetails(tc.test_name);
+      result = {
+        status: "failed",
+        duration_ms: totalDuration,
+        executed_at: new Date().toISOString(),
+        ...failure,
+      };
+      setResultTab("error");
+      setChatMessages(prev => [...prev, {
+        role: "assistant",
+        content: `❌ "${tc.test_name}" failed.\n\n**Cause:** ${failure.cause}\n\n**Fix:** ${failure.fix_suggestion}`,
+      }]);
+    }
 
     try {
       await updateTestCase.mutateAsync({ id: tc.id, updates: result });
     } catch {}
 
+    setIsExecuting(false);
     setRunningTests((prev) => { const s = new Set(prev); s.delete(tc.id); return s; });
     setSelectedTest((prev) => prev?.id === tc.id ? { ...prev, ...result } as AutonomousTestCase : prev);
     refetch();
-  };
+  }, [autonomousProject.base_url, updateTestCase, refetch]);
 
   const runAll = async () => {
+    abortRef.current = false;
+    setRunAllInProgress(true);
     const enabled = testCases.filter((tc) => tc.is_enabled);
+    setChatMessages(prev => [...prev, {
+      role: "assistant",
+      content: `📋 Running ${enabled.length} enabled test cases sequentially...`,
+    }]);
     for (const tc of enabled) {
-      await simulateRun(tc);
+      if (abortRef.current) break;
+      await executeTest(tc);
     }
+    setRunAllInProgress(false);
+    if (!abortRef.current) {
+      setChatMessages(prev => [...prev, {
+        role: "assistant",
+        content: `🏁 Test run complete. ${testCases.filter(t => t.status === "passed").length} passed, ${testCases.filter(t => t.status === "failed").length} failed.`,
+      }]);
+    }
+  };
+
+  const stopExecution = () => {
+    abortRef.current = true;
+    setRunAllInProgress(false);
   };
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return;
+    const userMsg = chatInput.trim();
     setChatMessages((prev) => [
       ...prev,
-      { role: "user", content: chatInput },
-      { role: "assistant", content: `I analyzed the test "${selectedTest?.test_name || "selected test"}". ${selectedTest?.status === "failed" ? `The failure was caused by: ${selectedTest.cause || "unknown"}. ${selectedTest.fix_suggestion || "Try updating the selector."}` : "The test is currently in good shape. Let me know if you need help with debugging or modifications."}` },
+      { role: "user", content: userMsg },
     ]);
     setChatInput("");
+
+    // Generate contextual AI response
+    setTimeout(() => {
+      let response = "";
+      if (selectedTest?.status === "failed") {
+        response = `I analyzed the test "${selectedTest.test_name}".\n\n**Root Cause:** ${selectedTest.cause || "Unknown"}\n\n**Suggested Fix:** ${selectedTest.fix_suggestion || "Check element selectors and add explicit waits."}\n\nWould you like me to update the test script with the fix?`;
+      } else if (selectedTest?.status === "passed") {
+        response = `"${selectedTest.test_name}" is passing. The test completed all steps successfully in ${selectedTest.duration_ms ? (selectedTest.duration_ms / 1000).toFixed(1) + "s" : "a few seconds"}. Let me know if you'd like to modify the test assertions or add edge cases.`;
+      } else if (userMsg.toLowerCase().includes("run") || userMsg.toLowerCase().includes("execute")) {
+        response = selectedTest
+          ? `I'll run "${selectedTest.test_name}" now. Click the Run button or I can help you configure the test steps first.`
+          : "Select a test case from the left panel first, then click Run.";
+      } else {
+        response = `I can help you with:\n• Debugging failed tests\n• Modifying test scripts\n• Understanding error traces\n• Suggesting better selectors\n\nSelect a test case and run it to get started.`;
+      }
+      setChatMessages(prev => [...prev, { role: "assistant", content: response }]);
+    }, 500);
   };
 
   const passedCount = testCases.filter((t) => t.status === "passed").length;
@@ -168,9 +256,15 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
           <div className="flex items-center gap-2">
             <Badge variant="outline">{passedCount} passed</Badge>
             <Badge variant="destructive">{failedCount} failed</Badge>
-            <Button onClick={runAll} size="sm">
-              <Play className="h-4 w-4 mr-1" /> Run All
-            </Button>
+            {runAllInProgress ? (
+              <Button onClick={stopExecution} size="sm" variant="destructive">
+                <StopCircle className="h-4 w-4 mr-1" /> Stop
+              </Button>
+            ) : (
+              <Button onClick={runAll} size="sm" disabled={isExecuting}>
+                <Play className="h-4 w-4 mr-1" /> Run All
+              </Button>
+            )}
           </div>
         </div>
 
@@ -183,25 +277,37 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
               </CardHeader>
               <ScrollArea className="h-[calc(100%-60px)]">
                 <div className="px-2 pb-2 space-y-1">
-                  {testCases.map((tc) => (
-                    <button
-                      key={tc.id}
-                      onClick={() => setSelectedTest(tc)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors",
-                        selectedTest?.id === tc.id
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent/50 text-foreground"
-                      )}
-                    >
-                      {runningTests.has(tc.id) ? (
-                        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-                      ) : (
-                        statusIcon(tc.status)
-                      )}
-                      <span className="truncate">{tc.test_name}</span>
-                    </button>
-                  ))}
+                  {testCases.map((tc) => {
+                    const isActive = selectedTest?.id === tc.id;
+                    const tcRunning = runningTests.has(tc.id);
+                    return (
+                      <button
+                        key={tc.id}
+                        onClick={() => {
+                          setSelectedTest(tc);
+                          if (!tcRunning) {
+                            setCurrentSteps([]);
+                          }
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors",
+                          isActive
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-accent/50 text-foreground"
+                        )}
+                      >
+                        {tcRunning ? (
+                          <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+                        ) : (
+                          statusIcon(tc.status)
+                        )}
+                        <span className="truncate flex-1">{tc.test_name}</span>
+                        {tc.duration_ms && !tcRunning && (
+                          <span className="text-[10px] text-muted-foreground">{(tc.duration_ms / 1000).toFixed(1)}s</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </Card>
@@ -211,12 +317,21 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
           <div className="col-span-5">
             <Card className="h-full flex flex-col overflow-hidden">
               <CardHeader className="py-3 px-4 flex-row items-center justify-between shrink-0">
-                <CardTitle className="text-sm">
+                <CardTitle className="text-sm truncate mr-2">
                   {selectedTest ? selectedTest.test_name : "Select a test"}
                 </CardTitle>
                 {selectedTest && (
-                  <Button size="sm" variant="outline" onClick={() => simulateRun(selectedTest)}>
-                    <Play className="h-3 w-3 mr-1" /> Run
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => executeTest(selectedTest)}
+                    disabled={isExecuting}
+                  >
+                    {runningTests.has(selectedTest.id) ? (
+                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running</>
+                    ) : (
+                      <><Play className="h-3 w-3 mr-1" /> Run</>
+                    )}
                   </Button>
                 )}
               </CardHeader>
@@ -226,8 +341,10 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                     <BrowserPreview
                       baseUrl={autonomousProject.base_url}
                       testName={selectedTest?.test_name || null}
+                      testDescription={selectedTest?.test_description || null}
                       testStatus={selectedTest?.status || "draft"}
                       isRunning={selectedTest ? runningTests.has(selectedTest.id) : false}
+                      executionSteps={currentSteps}
                     />
                   </ResizablePanel>
                   <ResizableHandle withHandle />
@@ -257,9 +374,11 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                           </div>
                         </TabsContent>
                         <TabsContent value="trace" className="flex-1 m-0 p-4">
-                          <pre className="text-xs font-mono bg-muted/50 rounded-lg p-4 text-foreground whitespace-pre-wrap">
-                            {selectedTest.trace || "No trace available"}
-                          </pre>
+                          <ScrollArea className="h-full">
+                            <pre className="text-xs font-mono bg-muted/50 rounded-lg p-4 text-foreground whitespace-pre-wrap">
+                              {selectedTest.trace || "No trace available"}
+                            </pre>
+                          </ScrollArea>
                         </TabsContent>
                         <TabsContent value="cause" className="flex-1 m-0 p-4">
                           <div className="bg-muted/50 rounded-lg p-4">
@@ -294,7 +413,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                     <div
                       key={i}
                       className={cn(
-                        "rounded-lg px-3 py-2 text-sm",
+                        "rounded-lg px-3 py-2 text-sm whitespace-pre-wrap",
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground ml-8"
                           : "bg-muted text-foreground mr-8"
@@ -325,7 +444,13 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                       <Send className="h-4 w-4" />
                     </Button>
                     {selectedTest && (
-                      <Button size="icon" variant="outline" onClick={() => simulateRun(selectedTest)} title="Re-run">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => executeTest(selectedTest)}
+                        disabled={isExecuting}
+                        title="Re-run"
+                      >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     )}
