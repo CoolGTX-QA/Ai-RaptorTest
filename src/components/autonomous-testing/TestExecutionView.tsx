@@ -10,6 +10,8 @@ import {
   ArrowLeft, Play, CheckCircle, XCircle, Clock, Loader2,
   AlertTriangle, Code, Bot, RotateCcw, Send,
 } from "lucide-react";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { BrowserPreview } from "./BrowserPreview";
 import { AutonomousProject, AutonomousTestCase, useAutonomousTesting } from "@/hooks/useAutonomousTesting";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
