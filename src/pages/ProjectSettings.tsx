@@ -420,7 +420,7 @@ export default function ProjectSettings() {
         sla_settings: JSON.parse(JSON.stringify(slaSettings)),
         test_types: JSON.parse(JSON.stringify(testTypes)),
         execution_statuses: JSON.parse(JSON.stringify(executionStatuses)),
-        tc_id_prefix: tcIdPrefix.trim().toUpperCase() || "TC",
+        tc_id_prefix: tcIdPrefix.trim() || "TC",
         updated_at: new Date().toISOString(),
       };
 
@@ -711,19 +711,19 @@ export default function ProjectSettings() {
                   <div className="space-y-2 flex-1 max-w-xs">
                     <Label>ID Prefix</Label>
                     <Input
-                      placeholder="e.g., VE, TC, PRJ"
+                      placeholder="e.g., Tvo, TC, PRJ"
                       value={tcIdPrefix}
-                      onChange={(e) => setTcIdPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                      onChange={(e) => setTcIdPrefix(e.target.value.replace(/[^A-Za-z0-9]/g, ""))}
                       maxLength={10}
                       disabled={!canManageSettings}
                     />
                     <p className="text-xs text-muted-foreground">
-                      New test cases will be numbered as {tcIdPrefix || "TC"}_01, {tcIdPrefix || "TC"}_02, etc.
+                      New test cases will be numbered as {tcIdPrefix || "TC"}_001, {tcIdPrefix || "TC"}_002, etc.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>Preview:</span>
-                    <Badge variant="outline" className="font-mono">{tcIdPrefix || "TC"}_01</Badge>
+                    <Badge variant="outline" className="font-mono">{tcIdPrefix || "TC"}_001</Badge>
                   </div>
                 </div>
               </CardContent>
