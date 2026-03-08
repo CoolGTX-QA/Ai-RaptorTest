@@ -499,7 +499,28 @@ export default function WorkspaceDetail() {
           </div>
         </div>
 
-        {/* Projects Grid */}
+        {/* Dashboard Stats */}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+          {[
+            { label: "Projects", value: projects.length, icon: FolderKanban, color: "text-blue-500" },
+            { label: "Test Cases", value: dashboardStats.totalTestCases, icon: TestTube2, color: "text-purple-500" },
+            { label: "Test Runs", value: dashboardStats.totalTestRuns, icon: BarChart3, color: "text-cyan-500" },
+            { label: "Pass Rate", value: `${dashboardStats.passRate}%`, icon: TrendingUp, color: dashboardStats.passRate >= 70 ? "text-green-500" : dashboardStats.passRate >= 40 ? "text-yellow-500" : "text-destructive" },
+            { label: "Open Defects", value: dashboardStats.openDefects, icon: Bug, color: "text-orange-500" },
+          ].map((stat) => (
+            <Card key={stat.label} className="border-border">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
         <div>
           <h2 className="text-xl font-semibold mb-4 text-foreground">Projects</h2>
           {projects.length === 0 ? (
