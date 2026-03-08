@@ -329,6 +329,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                 <CardTitle className="text-sm truncate mr-2">
                   {selectedTest ? selectedTest.test_name : "Select a test"}
                 </CardTitle>
+              <div className="flex items-center gap-1">
                 {selectedTest && (
                   <Button
                     size="sm"
@@ -343,6 +344,15 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                     )}
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsFullscreen((f) => !f)}
+                  title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                >
+                  {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
               </CardHeader>
               <div className="flex-1 overflow-hidden">
                 <ResizablePanelGroup direction="vertical">
