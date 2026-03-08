@@ -420,7 +420,7 @@ export default function ProjectSettings() {
         sla_settings: JSON.parse(JSON.stringify(slaSettings)),
         test_types: JSON.parse(JSON.stringify(testTypes)),
         execution_statuses: JSON.parse(JSON.stringify(executionStatuses)),
-        tc_id_prefix: tcIdPrefix.trim().toUpperCase() || "TC",
+        tc_id_prefix: tcIdPrefix.trim() || "TC",
         updated_at: new Date().toISOString(),
       };
 
