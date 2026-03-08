@@ -28,12 +28,29 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Redirect if already logged in
   if (user) {
     navigate("/dashboard", { replace: true });
     return null;
   }
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) {
+        toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Google sign-in failed", description: err.message || "An error occurred", variant: "destructive" });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
