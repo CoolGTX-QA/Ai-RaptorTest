@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HealthProgressBar } from "@/components/HealthProgressBar";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 import {
   Layers,
   FolderKanban,
