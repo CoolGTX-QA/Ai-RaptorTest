@@ -105,10 +105,9 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
 
   const getScript = (tc: AutonomousTestCase) => {
     if (tc.generated_script) return tc.generated_script;
-    const template = SAMPLE_SCRIPTS[tc.test_name] || SAMPLE_SCRIPTS.default;
-    return template
-      .replace(/\{\{BASE_URL\}\}/g, autonomousProject.base_url)
-      .replace(/\{\{TEST_NAME\}\}/g, tc.test_name);
+    // Generate Playwright script from parsed instructions
+    const instructions = parseTestInstructions(tc.test_name, tc.test_description, autonomousProject.base_url);
+    return generatePlaywrightScript(instructions, tc.test_name, autonomousProject.base_url);
   };
 
   const executeTest = useCallback(async (tc: AutonomousTestCase) => {
