@@ -265,10 +265,7 @@ export default function Workspaces() {
           </div>
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Workspace
-              </Button>
+              <InteractiveHoverButton text="Create Workspace" />
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>

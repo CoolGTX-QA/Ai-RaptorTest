@@ -353,13 +353,15 @@ export default function Auth() {
                         className="bg-background/50 border-border/50 focus:border-primary focus:ring-primary/20 transition-all duration-300"
                       />
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Creating account..." : "Register"}
-                    </Button>
+                    {isLoading ? (
+                      <Button type="submit" className="w-full" disabled>Creating account...</Button>
+                    ) : (
+                      <InteractiveHoverButton
+                        type="submit"
+                        text="Register"
+                        className="w-full"
+                      />
+                    )}
                   </form>
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">

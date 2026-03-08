@@ -138,9 +138,12 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
+                <DropdownMenuItem asChild className="p-0">
+                  <InteractiveHoverButton
+                    text="Log out"
+                    className="w-full rounded-sm border-destructive text-sm font-normal h-8 px-2 py-1.5"
+                    onClick={handleSignOut}
+                  />
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
