@@ -290,8 +290,14 @@ export function BrowserPreview({ baseUrl, testName, testDescription, testStatus,
 
         {/* Execution Step Log */}
         {(isRunning || activeSteps.length > 0) && (
-          <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border max-h-[45%] flex flex-col">
-            <div className="px-3 py-1.5 border-b border-border flex items-center justify-between shrink-0">
+          <div className={cn(
+            "absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border flex flex-col transition-all",
+            logMinimized ? "max-h-[32px]" : "max-h-[45%]"
+          )}>
+            <button
+              onClick={() => setLogMinimized(m => !m)}
+              className="px-3 py-1.5 border-b border-border flex items-center justify-between shrink-0 hover:bg-accent/30 transition-colors cursor-pointer w-full"
+            >
               <div className="flex items-center gap-1.5">
                 <Globe className="h-3 w-3 text-primary" />
                 <span className="text-[11px] font-medium text-foreground">Execution Log</span>
@@ -301,42 +307,47 @@ export function BrowserPreview({ baseUrl, testName, testDescription, testStatus,
                   </Badge>
                 )}
               </div>
-              <span className="text-[10px] text-muted-foreground">
-                {activeSteps.filter(s => s.status === "done" || s.status === "healed").length}/{activeSteps.length} steps
-              </span>
-            </div>
-            <div ref={logRef} className="px-3 py-1 space-y-0.5 overflow-y-auto">
-              {activeSteps.map((step, i) => (
-                <div key={i} className={cn(
-                  "flex items-center gap-2 text-[11px] py-0.5 rounded px-1 transition-colors",
-                  step.status === "running" && "bg-primary/5",
-                  step.status === "healed" && "bg-amber-500/5",
-                  step.status === "failed" && "bg-destructive/5"
-                )}>
-                  {getStepStatusIcon(step)}
-                  <span className="text-muted-foreground">
-                    {stepIcons[step.icon]}
-                  </span>
-                  <span className={cn(
-                    "flex-1",
-                    step.status === "pending" ? "text-muted-foreground" : "text-foreground"
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  {activeSteps.filter(s => s.status === "done" || s.status === "healed").length}/{activeSteps.length} steps
+                </span>
+                {logMinimized ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
+              </div>
+            </button>
+            {!logMinimized && (
+              <div ref={logRef} className="px-3 py-1 space-y-0.5 overflow-y-auto">
+                {activeSteps.map((step, i) => (
+                  <div key={i} className={cn(
+                    "flex items-center gap-2 text-[11px] py-0.5 rounded px-1 transition-colors",
+                    step.status === "running" && "bg-primary/5",
+                    step.status === "healed" && "bg-amber-500/5",
+                    step.status === "failed" && "bg-destructive/5"
                   )}>
-                    <span className="font-medium">{step.action}</span>
-                    {step.detail && <span className="text-muted-foreground ml-1">— {step.detail}</span>}
-                  </span>
-                  {step.status === "healed" && (
-                    <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500/30 text-amber-500">
-                      healed
-                    </Badge>
-                  )}
-                  {step.duration_ms ? (
-                    <span className="text-muted-foreground text-[10px] tabular-nums">{step.duration_ms}ms</span>
-                  ) : step.timestamp ? (
-                    <span className="text-muted-foreground text-[10px]">{step.timestamp}</span>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+                    {getStepStatusIcon(step)}
+                    <span className="text-muted-foreground">
+                      {stepIcons[step.icon]}
+                    </span>
+                    <span className={cn(
+                      "flex-1",
+                      step.status === "pending" ? "text-muted-foreground" : "text-foreground"
+                    )}>
+                      <span className="font-medium">{step.action}</span>
+                      {step.detail && <span className="text-muted-foreground ml-1">— {step.detail}</span>}
+                    </span>
+                    {step.status === "healed" && (
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500/30 text-amber-500">
+                        healed
+                      </Badge>
+                    )}
+                    {step.duration_ms ? (
+                      <span className="text-muted-foreground text-[10px] tabular-nums">{step.duration_ms}ms</span>
+                    ) : step.timestamp ? (
+                      <span className="text-muted-foreground text-[10px]">{step.timestamp}</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
