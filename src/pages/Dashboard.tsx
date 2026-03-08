@@ -367,12 +367,12 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300"
+            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
             onClick={() => navigate("/workspaces")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Workspaces</CardTitle>
-              <Layers className="h-4 w-4 text-muted-foreground" />
+              <Layers className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -385,12 +385,12 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300"
+            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
             onClick={() => navigate("/projects")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
-              <FolderKanban className="h-4 w-4 text-muted-foreground" />
+              <FolderKanban className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -403,12 +403,12 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300"
+            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
             onClick={() => navigate("/test-repository")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Test Cases</CardTitle>
-              <TestTube2 className="h-4 w-4 text-muted-foreground" />
+              <TestTube2 className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -421,12 +421,12 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300"
+            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
             onClick={() => navigate("/test-execution")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Execution Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
