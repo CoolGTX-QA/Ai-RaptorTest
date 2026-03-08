@@ -38,7 +38,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     if (user) {
-      // Fetch profile from profiles table
       const fetchProfile = async () => {
         const { data } = await supabase
           .from("profiles")
@@ -49,7 +48,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         if (data) {
           setProfile(data);
         } else {
-          // Fallback to user metadata
           setProfile({
             full_name: user.user_metadata?.full_name || null,
             email: user.email || "",
@@ -57,7 +55,24 @@ export function AppLayout({ children }: AppLayoutProps) {
           });
         }
       };
+
+      const fetchRole = async () => {
+        const { data } = await supabase
+          .from("workspace_members")
+          .select("role")
+          .eq("user_id", user.id)
+          .not("accepted_at", "is", null)
+          .order("invited_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.role) {
+          setUserRole(data.role as AppRole);
+        }
+      };
+
       fetchProfile();
+      fetchRole();
     }
   }, [user]);
 
