@@ -113,13 +113,13 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
   const executeTest = useCallback(async (tc: AutonomousTestCase) => {
     if (abortRef.current) return;
 
-    // Generate contextual steps for this test case
-    const steps = generateExecutionSteps({
-      testName: tc.test_name,
-      testDescription: tc.test_description,
-      baseUrl: autonomousProject.base_url,
-      testType: tc.test_type,
-    });
+    // Parse test case instructions and build execution steps
+    const instructions = parseTestInstructions(
+      tc.test_name,
+      tc.test_description,
+      autonomousProject.base_url
+    );
+    const steps = buildExecutionSteps(instructions, autonomousProject.base_url);
 
     setCurrentSteps(steps);
     setSelectedTest({ ...tc, status: "running" });
