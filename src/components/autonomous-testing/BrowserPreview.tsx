@@ -5,6 +5,7 @@ import {
   ArrowLeft, ArrowRight, RotateCcw, Globe, Loader2,
   CheckCircle, XCircle, Lock, Camera, MousePointer,
   Type, Eye, Navigation, Search, FormInput, Zap, RefreshCw, ShieldCheck,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { simulateSelfHealing, type HealingResult } from "./TestExecutionEngine";
