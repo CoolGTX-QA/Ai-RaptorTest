@@ -53,6 +53,7 @@ export function BrowserPreview({ baseUrl, testName, testDescription, testStatus,
   const [currentUrl, setCurrentUrl] = useState(baseUrl);
   const [iframeKey, setIframeKey] = useState(0);
   const [healingCount, setHealingCount] = useState(0);
+  const [logMinimized, setLogMinimized] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
