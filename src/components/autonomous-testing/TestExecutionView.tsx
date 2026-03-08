@@ -364,6 +364,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                       testStatus={selectedTest?.status || "draft"}
                       isRunning={selectedTest ? runningTests.has(selectedTest.id) : false}
                       executionSteps={currentSteps}
+                      onStepsComplete={handleStepsComplete}
                     />
                   </ResizablePanel>
                   <ResizableHandle withHandle />
