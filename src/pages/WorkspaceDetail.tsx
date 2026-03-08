@@ -654,7 +654,50 @@ export default function WorkspaceDetail() {
           )}
         </div>
 
-        {/* Delete Project Confirmation Dialog */}
+        {/* Recent Activity Feed */}
+        {dashboardStats.recentActivities.length > 0 && (
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Activity className="h-5 w-5 text-primary" />
+                Recent Activity
+              </CardTitle>
+              <CardDescription>Latest actions across all projects in this workspace</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-3">
+                  {dashboardStats.recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="p-1.5 rounded-full bg-muted shrink-0">
+                        {activity.action_type === "create" && <Plus className="h-3 w-3 text-green-500" />}
+                        {activity.action_type === "update" && <Edit className="h-3 w-3 text-blue-500" />}
+                        {activity.action_type === "delete" && <Trash2 className="h-3 w-3 text-destructive" />}
+                        {activity.action_type === "execute" && <CheckCircle2 className="h-3 w-3 text-purple-500" />}
+                        {!["create", "update", "delete", "execute"].includes(activity.action_type) && <Activity className="h-3 w-3 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">
+                          <span className="capitalize font-medium">{activity.action_type}</span>
+                          {" "}
+                          <span className="text-muted-foreground">{activity.entity_type}</span>
+                          {activity.entity_name && (
+                            <span className="font-medium"> "{activity.entity_name}"</span>
+                          )}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {new Date(activity.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
+
+
         <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
