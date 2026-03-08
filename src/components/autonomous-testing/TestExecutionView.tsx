@@ -308,7 +308,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                 {/* Center body */}
                 <div className="flex-1 overflow-hidden">
                   <ResizablePanelGroup direction="vertical">
-                    <ResizablePanel defaultSize={isFullscreen ? 65 : 55} minSize={25}>
+                    <ResizablePanel defaultSize={isFullscreen ? 70 : 60} minSize={30}>
                       <BrowserPreview
                         baseUrl={autonomousProject.base_url}
                         testName={selectedTest?.test_name || null}
@@ -320,7 +320,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                       />
                     </ResizablePanel>
                     <ResizableHandle withHandle />
-                    <ResizablePanel defaultSize={isFullscreen ? 35 : 45} minSize={15}>
+                    <ResizablePanel defaultSize={isFullscreen ? 30 : 40} minSize={10}>
                       {selectedTest && (
                         <Tabs value={resultTab} onValueChange={setResultTab} className="h-full flex flex-col">
                           <TabsList className="mx-3 mt-1.5 h-8">
