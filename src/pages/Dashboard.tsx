@@ -657,10 +657,57 @@ export default function Dashboard() {
           </ul>
         </div>
 
-        {/* Bottom Row */}
-        <div className="grid gap-6 lg:grid-cols-1">
-          {/* Recent Activity */}
-          <Card className="border-border">
+        {/* Recent Activity */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Recent Activity</CardTitle>
+            <CardDescription>Latest updates from your team</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingActivity ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-3">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentActivity.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Clock className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">No recent activity yet</p>
+                <p className="text-xs text-muted-foreground">Activity will appear here as you work with test cases, runs, and defects.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-4 rounded-lg p-3 transition-colors hover:bg-accent"
+                  >
+                    <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">"{activity.entityName}"</span>{" "}
+                        was {activity.actionType}d
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        by {activity.userName || activity.userEmail} • {formatTimeAgo(activity.createdAt)}
+                      </p>
+                    </div>
+                    {activity.actionType === "delete" && (
+                      <Badge variant="destructive">Deleted</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );
