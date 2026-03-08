@@ -16,12 +16,10 @@ interface InviteRequest {
   workspaceName: string;
   email: string;
   role: string;
-  inviterId: string;
   inviterName: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -31,56 +29,53 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    // Get auth header to verify the user is authenticated
+    // Require authentication
     const authHeader = req.headers.get("authorization");
-    
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Create admin client to bypass RLS
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const body = await req.json();
-    const { workspaceId, workspaceName, email, role, inviterId, inviterName }: InviteRequest = body;
+    // Verify the user's JWT
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
-    console.log("Received invite request:", { workspaceId, email, role, inviterId });
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = user.id;
+
+    const body = await req.json();
+    const { workspaceId, workspaceName, email, role, inviterName }: InviteRequest = body;
+
+    console.log("Received invite request:", { workspaceId, email, role, userId });
 
     // Validate required fields
     if (!workspaceId || !email || !role) {
       throw new Error("Missing required fields: workspaceId, email, role");
     }
 
-    // Require either authentication or inviterId for internal calls
-    if (!inviterId) {
-      throw new Error("inviterId is required");
-    }
+    // Verify the authenticated user has manager+ access to this workspace
+    const { data: hasAccess } = await supabaseAdmin.rpc('has_workspace_access', {
+      p_workspace_id: workspaceId,
+      p_user_id: userId,
+      p_min_role: 'manager'
+    });
 
-    let userId = inviterId;
-
-    // If auth header provided, try to verify the user
-    if (authHeader) {
-      try {
-        const supabaseUser = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-          global: { headers: { Authorization: authHeader } }
-        });
-
-        const { data: { user } } = await supabaseUser.auth.getUser();
-        
-        if (user) {
-          userId = user.id;
-
-          // Verify the user has manager+ access to this workspace
-          const { data: hasAccess } = await supabaseAdmin.rpc('has_workspace_access', {
-            p_workspace_id: workspaceId,
-            p_user_id: user.id,
-            p_min_role: 'manager'
-          });
-
-          if (!hasAccess) {
-            throw new Error("You don't have permission to invite members to this workspace");
-          }
-        }
-      } catch (authError: any) {
-        // Auth check failed, but we have inviterId so continue
-        console.log("Auth check skipped/failed, using inviterId:", inviterId);
-      }
+    if (!hasAccess) {
+      return new Response(
+        JSON.stringify({ error: "You don't have permission to invite members to this workspace" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Check if user already exists in profiles
@@ -110,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
           workspace_id: workspaceId,
           user_id: existingProfile.id,
           role: role,
-          invited_by: userId || inviterId,
+          invited_by: userId,
           accepted_at: new Date().toISOString(),
         });
 
@@ -120,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       await supabaseAdmin.from("activity_logs").insert({
-        user_id: userId || inviterId,
+        user_id: userId,
         action_type: "create",
         entity_type: "member",
         entity_id: existingProfile.id,
@@ -153,14 +148,14 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("An invitation has already been sent to this email");
     }
 
-    // Create invite record using admin client (bypasses RLS)
+    // Create invite record
     const { data: inviteData, error: inviteError } = await supabaseAdmin
       .from("workspace_invites")
       .insert({
         workspace_id: workspaceId,
         email: email.toLowerCase(),
         role: role,
-        invited_by: userId || inviterId,
+        invited_by: userId,
       })
       .select()
       .single();
@@ -171,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     await supabaseAdmin.from("activity_logs").insert({
-      user_id: userId || inviterId,
+      user_id: userId,
       action_type: "create",
       entity_type: "member",
       entity_name: email.toLowerCase(),
@@ -252,7 +247,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!emailResponse.ok) {
       console.error("Resend API error:", responseData);
-      // Invite was created, but email failed - still return success with warning
       return new Response(JSON.stringify({ 
         success: true, 
         message: "Invitation created but email delivery may have failed",
