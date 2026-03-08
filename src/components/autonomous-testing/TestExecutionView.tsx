@@ -144,22 +144,119 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
 
   const stopExecution = () => { abortRef.current = true; setRunAllInProgress(false); };
 
-  const handleSendChat = () => {
-    if (!chatInput.trim()) return;
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const handleSendChat = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
     const userMsg = chatInput.trim();
     setChatMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setChatInput("");
-    setTimeout(() => {
-      let response = "";
-      if (selectedTest?.status === "failed") {
-        response = `I analyzed "${selectedTest.test_name}".\n\n**Root Cause:** ${selectedTest.cause || "Unknown"}\n\n**Fix:** ${selectedTest.fix_suggestion || "Check selectors and add waits."}`;
-      } else if (selectedTest?.status === "passed") {
-        response = `"${selectedTest.test_name}" passed in ${selectedTest.duration_ms ? (selectedTest.duration_ms / 1000).toFixed(1) + "s" : "a few seconds"}.`;
-      } else {
-        response = `I can help with:\n• Debugging failed tests\n• Modifying scripts\n• Understanding traces\n• Better selectors`;
+    setIsChatLoading(true);
+
+    // Build context for the AI
+    const testContext = selectedTest
+      ? {
+          test_name: selectedTest.test_name,
+          test_description: selectedTest.test_description,
+          status: selectedTest.status,
+          error_message: selectedTest.error_message,
+          trace: selectedTest.trace,
+          cause: selectedTest.cause,
+          fix_suggestion: selectedTest.fix_suggestion,
+          generated_script: selectedTest.generated_script,
+          base_url: autonomousProject.base_url,
+        }
+      : null;
+
+    // Build message history (last 10 messages for context)
+    const recentMessages = chatMessages.slice(-10).map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+    recentMessages.push({ role: "user", content: userMsg });
+
+    let assistantContent = "";
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-test-error`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ messages: recentMessages, testContext }),
+        }
+      );
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Error ${resp.status}`);
       }
-      setChatMessages(prev => [...prev, { role: "assistant", content: response }]);
-    }, 500);
+
+      if (!resp.body) throw new Error("No stream body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setChatMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant" && last._streaming) {
+                  return prev.map((m, i) =>
+                    i === prev.length - 1 ? { ...m, content: assistantContent } : m
+                  );
+                }
+                return [...prev, { role: "assistant", content: assistantContent, _streaming: true }];
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Finalize streaming message
+      setChatMessages((prev) =>
+        prev.map((m, i) =>
+          i === prev.length - 1 && (m as any)._streaming
+            ? { role: m.role, content: m.content }
+            : m
+        )
+      );
+    } catch (err: any) {
+      console.error("AI chat error:", err);
+      setChatMessages((prev) => [
+        ...prev,
+        ...(assistantContent ? [] : [{ role: "assistant", content: `⚠️ ${err.message || "Failed to get AI response. Please try again."}` }]),
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
   };
 
   const passedCount = testCases.filter((t) => t.status === "passed").length;
