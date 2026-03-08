@@ -323,40 +323,44 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
           </div>
 
           {/* CENTER: Execution Preview */}
-          <div className="col-span-5">
+          <div className={cn(
+            isFullscreen
+              ? "fixed inset-0 z-50 bg-background p-4"
+              : "col-span-5"
+          )}>
             <Card className="h-full flex flex-col overflow-hidden">
               <CardHeader className="py-3 px-4 flex-row items-center justify-between shrink-0">
                 <CardTitle className="text-sm truncate mr-2">
                   {selectedTest ? selectedTest.test_name : "Select a test"}
                 </CardTitle>
-              <div className="flex items-center gap-1">
-                {selectedTest && (
+                <div className="flex items-center gap-1">
+                  {selectedTest && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => executeTest(selectedTest)}
+                      disabled={isExecuting}
+                    >
+                      {runningTests.has(selectedTest.id) ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running</>
+                      ) : (
+                        <><Play className="h-3 w-3 mr-1" /> Run</>
+                      )}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => executeTest(selectedTest)}
-                    disabled={isExecuting}
+                    variant="ghost"
+                    onClick={() => setIsFullscreen((f) => !f)}
+                    title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
                   >
-                    {runningTests.has(selectedTest.id) ? (
-                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running</>
-                    ) : (
-                      <><Play className="h-3 w-3 mr-1" /> Run</>
-                    )}
+                    {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsFullscreen((f) => !f)}
-                  title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                >
-                  {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-                </Button>
-              </div>
+                </div>
               </CardHeader>
               <div className="flex-1 overflow-hidden">
                 <ResizablePanelGroup direction="vertical">
-                  <ResizablePanel defaultSize={55} minSize={30}>
+                  <ResizablePanel defaultSize={isFullscreen ? 70 : 55} minSize={30}>
                     <BrowserPreview
                       baseUrl={autonomousProject.base_url}
                       testName={selectedTest?.test_name || null}
@@ -368,7 +372,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                     />
                   </ResizablePanel>
                   <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={45} minSize={20}>
+                  <ResizablePanel defaultSize={isFullscreen ? 30 : 45} minSize={15}>
                     {selectedTest && (
                       <Tabs value={resultTab} onValueChange={setResultTab} className="h-full flex flex-col">
                         <TabsList className="mx-4 mt-2">
