@@ -96,7 +96,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
     // Add chat message about starting
     setChatMessages(prev => [...prev, {
       role: "assistant",
-      content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps to execute.`,
+      content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps parsed from test instructions.\n\n🛡️ Self-healing enabled: Will auto-retry with fallback selectors on element lookup failures.`,
     }]);
 
     // Wait for BrowserPreview to finish stepping through all steps
