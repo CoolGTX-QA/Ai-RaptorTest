@@ -132,7 +132,17 @@ export default function TestRepository() {
       toast({ title: "Error", description: "Please select a project first", variant: "destructive" });
       return;
     }
-    await bulkCreateTestCases.mutateAsync(importedCases.map((tc) => ({ ...tc, project_id: currentProjectId })));
+    const cleanedCases = importedCases.map(({ title, description, priority, status, preconditions, expected_result, tags }) => ({
+      title,
+      description: description || "",
+      priority: priority || "medium",
+      status: status || "draft",
+      preconditions: preconditions || "",
+      expected_result: expected_result || "",
+      tags: tags || [],
+      project_id: currentProjectId,
+    }));
+    await bulkCreateTestCases.mutateAsync(cleanedCases);
   };
 
   const handleBulkAssignReviewer = async () => {

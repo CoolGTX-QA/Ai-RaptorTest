@@ -48,35 +48,42 @@ export function UploadStep({ onFileUploaded }: UploadStepProps) {
     URL.revokeObjectURL(link.href);
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const values: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+          current += '"'; // Handle escaped double quote ""
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === "," && !inQuotes) {
+        values.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+    return values;
+  };
+
   const parseCSVHeaders = (content: string): { headers: CSVColumn[]; data: string[][] } => {
-    const lines = content.split("\n").filter(line => line.trim());
+    // Normalize line endings (handles \r\n, \r, and \n)
+    const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = normalizedContent.split("\n").filter(line => line.trim());
     if (lines.length < 1) return { headers: [], data: [] };
 
-    const parseLine = (line: string): string[] => {
-      const values: string[] = [];
-      let current = "";
-      let inQuotes = false;
-      
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === "," && !inQuotes) {
-          values.push(current.trim());
-          current = "";
-        } else {
-          current += char;
-        }
-      }
-      values.push(current.trim());
-      return values;
-    };
-
-    const headerRow = parseLine(lines[0]);
-    const dataRows = lines.slice(1).map(parseLine);
+    const headerRow = parseCSVLine(lines[0]);
+    const dataRows = lines.slice(1).map(parseCSVLine);
     
     const headers: CSVColumn[] = headerRow.map((name, index) => ({
-      name,
+      name: name.replace(/^\uFEFF/, ''), // Remove BOM character
       sampleValue: dataRows[0]?.[index] || ""
     }));
 
