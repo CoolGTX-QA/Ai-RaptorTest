@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RoleBadge } from "@/components/RoleBadge";
+import type { AppRole } from "@/hooks/useRBAC";
 
 interface Profile {
   full_name: string | null;
