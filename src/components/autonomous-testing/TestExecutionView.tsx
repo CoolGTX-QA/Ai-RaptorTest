@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,8 +43,8 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [runAllInProgress, setRunAllInProgress] = useState(false);
   const abortRef = useRef(false);
-  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
-    { role: "assistant", content: "I'm your AI testing assistant. Select a test case to see its details, or run tests to see results. I can help debug failures and suggest fixes." },
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string; _streaming?: boolean }[]>([
+    { role: "assistant", content: "I'm your AI testing assistant. Select a test case and ask me about errors — I'll analyze failures and suggest fixes using AI." },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [resultTab, setResultTab] = useState("script");
@@ -143,22 +144,119 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
 
   const stopExecution = () => { abortRef.current = true; setRunAllInProgress(false); };
 
-  const handleSendChat = () => {
-    if (!chatInput.trim()) return;
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const handleSendChat = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
     const userMsg = chatInput.trim();
     setChatMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setChatInput("");
-    setTimeout(() => {
-      let response = "";
-      if (selectedTest?.status === "failed") {
-        response = `I analyzed "${selectedTest.test_name}".\n\n**Root Cause:** ${selectedTest.cause || "Unknown"}\n\n**Fix:** ${selectedTest.fix_suggestion || "Check selectors and add waits."}`;
-      } else if (selectedTest?.status === "passed") {
-        response = `"${selectedTest.test_name}" passed in ${selectedTest.duration_ms ? (selectedTest.duration_ms / 1000).toFixed(1) + "s" : "a few seconds"}.`;
-      } else {
-        response = `I can help with:\n• Debugging failed tests\n• Modifying scripts\n• Understanding traces\n• Better selectors`;
+    setIsChatLoading(true);
+
+    // Build context for the AI
+    const testContext = selectedTest
+      ? {
+          test_name: selectedTest.test_name,
+          test_description: selectedTest.test_description,
+          status: selectedTest.status,
+          error_message: selectedTest.error_message,
+          trace: selectedTest.trace,
+          cause: selectedTest.cause,
+          fix_suggestion: selectedTest.fix_suggestion,
+          generated_script: selectedTest.generated_script,
+          base_url: autonomousProject.base_url,
+        }
+      : null;
+
+    // Build message history (last 10 messages for context)
+    const recentMessages = chatMessages.slice(-10).map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+    recentMessages.push({ role: "user", content: userMsg });
+
+    let assistantContent = "";
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-test-error`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ messages: recentMessages, testContext }),
+        }
+      );
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Error ${resp.status}`);
       }
-      setChatMessages(prev => [...prev, { role: "assistant", content: response }]);
-    }, 500);
+
+      if (!resp.body) throw new Error("No stream body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setChatMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant" && last._streaming) {
+                  return prev.map((m, i) =>
+                    i === prev.length - 1 ? { ...m, content: assistantContent } : m
+                  );
+                }
+                return [...prev, { role: "assistant", content: assistantContent, _streaming: true }];
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Finalize streaming message
+      setChatMessages((prev) =>
+        prev.map((m, i) =>
+          i === prev.length - 1 && (m as any)._streaming
+            ? { role: m.role, content: m.content }
+            : m
+        )
+      );
+    } catch (err: any) {
+      console.error("AI chat error:", err);
+      setChatMessages((prev) => [
+        ...prev,
+        ...(assistantContent ? [] : [{ role: "assistant", content: `⚠️ ${err.message || "Failed to get AI response. Please try again."}` }]),
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
   };
 
   const passedCount = testCases.filter((t) => t.status === "passed").length;
@@ -396,32 +494,45 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                         <div
                           key={i}
                           className={cn(
-                            "rounded-lg px-3 py-2 text-xs whitespace-pre-wrap leading-relaxed",
+                            "rounded-lg px-3 py-2 text-xs leading-relaxed",
                             msg.role === "user"
                               ? "bg-primary text-primary-foreground ml-6"
                               : "bg-muted text-foreground mr-4"
                           )}
                         >
-                          {msg.content}
+                          {msg.role === "assistant" ? (
+                            <div className="prose prose-xs prose-neutral dark:prose-invert max-w-none [&_p]:text-xs [&_p]:my-1 [&_li]:text-xs [&_code]:text-[10px] [&_pre]:text-[10px] [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            msg.content
+                          )}
                         </div>
                       ))}
+                      {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== "assistant" && (
+                        <div className="bg-muted text-foreground mr-4 rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          <span className="text-muted-foreground">Analyzing...</span>
+                        </div>
+                      )}
                     </div>
                   </ScrollArea>
                   <div className="p-2.5 border-t border-border/60 shrink-0">
                     <div className="flex gap-1.5">
                       <Textarea
-                        placeholder="Ask about failures..."
+                        placeholder="Ask about failures, errors, or how to fix tests..."
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         rows={2}
                         className="resize-none text-xs min-h-[52px]"
+                        disabled={isChatLoading}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); }
                         }}
                       />
                       <div className="flex flex-col gap-1">
-                        <Button size="icon" className="h-6 w-6" onClick={handleSendChat}>
-                          <Send className="h-3 w-3" />
+                        <Button size="icon" className="h-6 w-6" onClick={handleSendChat} disabled={isChatLoading}>
+                          {isChatLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                         </Button>
                         {selectedTest && (
                           <Button
