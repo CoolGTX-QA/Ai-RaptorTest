@@ -120,20 +120,18 @@ const GlowingEffect = memo(
 
     return (
       <>
+        {/* Static glow background - always visible */}
         <div
           className={cn(
-            "pointer-events-none absolute -inset-px rounded-[inherit] opacity-0 transition-opacity duration-300",
-            glow && "opacity-100",
-            variant === "white" && "bg-[hsl(var(--primary-foreground))]",
+            "pointer-events-none absolute -inset-px rounded-[inherit] transition-opacity duration-300",
+            glow ? "opacity-100" : "opacity-0",
             disabled && "!hidden"
           )}
           style={{
-            background:
-              variant === "default"
-                ? `radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.15), transparent 70%)`
-                : undefined,
+            background: `radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.2), transparent 70%)`,
           }}
         />
+        {/* Animated conic gradient border */}
         <div
           ref={containerRef}
           style={
@@ -143,38 +141,51 @@ const GlowingEffect = memo(
               "--start": "0",
               "--active": "0",
               "--glowing-border-width": `${borderWidth}px`,
-              "--repeating-conic-gradient": `repeating-conic-gradient(
-                from calc(var(--start) * 1deg),
-                hsl(var(--primary) / calc(0.8 - 0.3 * var(--active))) 0%,
-                hsl(var(--primary) / calc(0.4 - 0.1 * var(--active))) 5%,
-                transparent 10%,
-                transparent 40%,
-                hsl(var(--primary) / calc(0.8 - 0.3 * var(--active))) 50%,
-                hsl(var(--primary) / calc(0.4 - 0.1 * var(--active))) 55%,
-                transparent 60%,
-                transparent 90%,
-                hsl(var(--primary) / calc(0.8 - 0.3 * var(--active))) 100%
-              )`,
             } as React.CSSProperties
           }
           className={cn(
-            "pointer-events-none absolute -inset-px rounded-[inherit]",
-            "bg-[var(--repeating-conic-gradient)]",
-            "after:content-[''] after:absolute after:inset-[var(--glowing-border-width)] after:rounded-[inherit] after:bg-card",
-            "opacity-[var(--active)]",
-            "transition-opacity duration-300",
-            blur > 0 && "blur-[var(--blur)]",
-            className,
-            disabled && "!hidden"
+            "pointer-events-none absolute -inset-px rounded-[inherit] transition-opacity duration-300",
+            disabled && "!hidden",
+            className
           )}
         >
+          {/* The animated border layer */}
+          <div
+            className="absolute inset-0 rounded-[inherit] overflow-hidden"
+            style={{
+              background: `repeating-conic-gradient(
+                from calc(var(--start, 0) * 1deg),
+                hsl(158 64% 51% / 0.8) 0%,
+                hsl(158 64% 51% / 0.4) 5%,
+                transparent 12%,
+                transparent 40%,
+                hsl(158 64% 51% / 0.8) 50%,
+                hsl(158 64% 51% / 0.4) 55%,
+                transparent 62%,
+                transparent 90%,
+                hsl(158 64% 51% / 0.8) 100%
+              )`,
+              opacity: `var(--active, 0)`,
+              transition: "opacity 0.3s ease",
+            }}
+          />
+          {/* Inner mask to create border effect */}
+          <div
+            className="absolute rounded-[inherit] bg-card"
+            style={{
+              inset: `${borderWidth}px`,
+            }}
+          />
+          {/* Persistent subtle green border glow */}
           <div
             className={cn(
               "absolute inset-0 rounded-[inherit]",
-              "bg-[var(--repeating-conic-gradient)]",
-              glow && "opacity-100",
-              !glow && "opacity-0"
+              glow ? "opacity-100" : "opacity-0"
             )}
+            style={{
+              boxShadow: `inset 0 0 0 ${borderWidth}px hsl(158 64% 51% / 0.3), 0 0 12px hsl(158 64% 51% / 0.15)`,
+              transition: "opacity 0.3s ease",
+            }}
           />
         </div>
       </>

@@ -624,7 +624,7 @@ export default function Dashboard() {
           <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-4">
             {quickLinks.map((link) => (
               <li key={link.title} className="min-h-[8rem] list-none">
-                <div className="relative h-full rounded-xl border border-border p-2">
+                <div className="relative h-full rounded-xl border border-primary/20 p-2 shadow-[0_0_15px_hsl(var(--primary)/0.1)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.25)] transition-shadow duration-300">
                   <GlowingEffect
                     spread={40}
                     glow
@@ -635,11 +635,11 @@ export default function Dashboard() {
                   />
                   <Link
                     to={link.href}
-                    className="relative flex h-full flex-col justify-between gap-4 overflow-hidden rounded-lg border-0.75 border-border bg-card p-4 shadow-sm"
+                    className="relative flex h-full flex-col justify-between gap-4 overflow-hidden rounded-lg bg-card p-4 group"
                   >
                     <div className="relative flex flex-1 flex-col justify-between gap-3">
-                      <div className="w-fit rounded-lg border border-border p-2">
-                        <link.icon className="h-4 w-4 text-primary" />
+                      <div className="w-fit rounded-lg border border-primary/30 bg-primary/5 p-2">
+                        <link.icon className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-sm font-semibold text-foreground">
