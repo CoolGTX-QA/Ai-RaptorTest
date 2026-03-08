@@ -78,6 +78,8 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
   ]);
   const [chatInput, setChatInput] = useState("");
   const [resultTab, setResultTab] = useState("script");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const stepsResolveRef = useRef<((passed: boolean) => void) | null>(null);
 
   const { data: testCases = [], refetch } = useQuery({
     queryKey: ["autonomous-test-cases", autonomousProject.id],
