@@ -33,40 +33,6 @@ const statusIcon = (s: string) => {
   }
 };
 
-const SAMPLE_SCRIPTS: Record<string, string> = {
-  "Main navigation and page routing": `import { test, expect } from '@playwright/test';
-
-test('Main navigation and page routing', async ({ page }) => {
-  await page.goto('{{BASE_URL}}');
-  
-  // Verify main navigation links
-  const navLinks = page.locator('nav a');
-  await expect(navLinks).toHaveCount.greaterThan(0);
-  
-  // Click each nav link and verify no errors
-  const links = await navLinks.allTextContents();
-  for (const linkText of links) {
-    await page.click(\`nav a:has-text("\${linkText}")\`);
-    await page.waitForLoadState('networkidle');
-    await expect(page).not.toHaveTitle(/error|404/i);
-  }
-});`,
-  default: `import { test, expect } from '@playwright/test';
-
-test('{{TEST_NAME}}', async ({ page }) => {
-  await page.goto('{{BASE_URL}}');
-  
-  // Step 1: Navigate to the target page
-  await page.waitForLoadState('networkidle');
-  
-  // Step 2: Interact with page elements
-  // await page.click('selector');
-  
-  // Step 3: Assert expected outcomes
-  await expect(page).toBeVisible();
-});`,
-};
-
 export function TestExecutionView({ autonomousProject, onBack }: Props) {
   const [selectedTest, setSelectedTest] = useState<AutonomousTestCase | null>(null);
   const [runningTests, setRunningTests] = useState<Set<string>>(new Set());
