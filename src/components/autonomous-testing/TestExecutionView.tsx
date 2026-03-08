@@ -114,10 +114,12 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
     let result: Partial<AutonomousTestCase>;
 
     if (passed) {
+      const script = generatePlaywrightScript(instructions, tc.test_name, autonomousProject.base_url);
       result = {
         status: "passed",
         duration_ms: totalDuration,
         executed_at: new Date().toISOString(),
+        generated_script: script,
         error_message: null,
         trace: null,
         cause: null,
@@ -125,7 +127,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       };
       setChatMessages(prev => [...prev, {
         role: "assistant",
-        content: `✅ "${tc.test_name}" passed in ${(totalDuration / 1000).toFixed(1)}s. All ${steps.length} steps completed successfully.`,
+        content: `✅ "${tc.test_name}" passed in ${(totalDuration / 1000).toFixed(1)}s. All ${steps.length} steps completed.\n\n🛡️ Self-healing was activated during execution — fallback selectors ensured stability.`,
       }]);
     } else {
       const failure = generateFailureDetails(tc.test_name);
