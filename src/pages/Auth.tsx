@@ -274,13 +274,15 @@ export default function Auth() {
                         className="bg-background/50 border-border/50 focus:border-primary focus:ring-primary/20 transition-all duration-300"
                       />
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Signing in..." : "Login"}
-                    </Button>
+                    {isLoading ? (
+                      <Button type="submit" className="w-full" disabled>Signing in...</Button>
+                    ) : (
+                      <InteractiveHoverButton
+                        type="submit"
+                        text="Login"
+                        className="w-full"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="link"
