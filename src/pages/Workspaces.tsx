@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -265,7 +264,10 @@ export default function Workspaces() {
           </div>
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <InteractiveHoverButton text="Create Workspace" />
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Workspace
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>

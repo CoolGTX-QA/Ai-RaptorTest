@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -274,15 +273,13 @@ export default function Auth() {
                         className="bg-background/50 border-border/50 focus:border-primary focus:ring-primary/20 transition-all duration-300"
                       />
                     </div>
-                    {isLoading ? (
-                      <Button type="submit" className="w-full" disabled>Signing in...</Button>
-                    ) : (
-                      <InteractiveHoverButton
-                        type="submit"
-                        text="Login"
-                        className="w-full"
-                      />
-                    )}
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300" 
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Signing in..." : "Login"}
+                    </Button>
                     <Button
                       type="button"
                       variant="link"
@@ -353,15 +350,13 @@ export default function Auth() {
                         className="bg-background/50 border-border/50 focus:border-primary focus:ring-primary/20 transition-all duration-300"
                       />
                     </div>
-                    {isLoading ? (
-                      <Button type="submit" className="w-full" disabled>Creating account...</Button>
-                    ) : (
-                      <InteractiveHoverButton
-                        type="submit"
-                        text="Register"
-                        className="w-full"
-                      />
-                    )}
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300" 
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Creating account..." : "Register"}
+                    </Button>
                   </form>
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
