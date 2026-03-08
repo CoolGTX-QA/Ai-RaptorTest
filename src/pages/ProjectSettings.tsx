@@ -695,6 +695,40 @@ export default function ProjectSettings() {
 
           {/* Test Cases Tab */}
           <TabsContent value="test-cases" className="space-y-6">
+            {/* Test Case ID Prefix Card */}
+            <Card className="border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Test Case ID Prefix
+                </CardTitle>
+                <CardDescription>
+                  Set the prefix for auto-generated test case IDs (e.g., VE_01, TC_01)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="space-y-2 flex-1 max-w-xs">
+                    <Label>ID Prefix</Label>
+                    <Input
+                      placeholder="e.g., VE, TC, PRJ"
+                      value={tcIdPrefix}
+                      onChange={(e) => setTcIdPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                      maxLength={10}
+                      disabled={!canManageSettings}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      New test cases will be numbered as {tcIdPrefix || "TC"}_01, {tcIdPrefix || "TC"}_02, etc.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Preview:</span>
+                    <Badge variant="outline" className="font-mono">{tcIdPrefix || "TC"}_01</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid gap-6 md:grid-cols-2">
               {/* Custom Statuses */}
               <Card className="border-border">
