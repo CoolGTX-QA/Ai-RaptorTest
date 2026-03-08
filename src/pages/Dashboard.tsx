@@ -403,7 +403,7 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
+            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300"
             onClick={() => navigate("/test-repository")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
