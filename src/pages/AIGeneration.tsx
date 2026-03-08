@@ -19,14 +19,17 @@ import {
   Save,
   RefreshCw,
   ChevronRight,
-  Check,
   Edit2,
   Trash2,
   Upload,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useProjects } from "@/hooks/useProjects";
+import { useTestCases } from "@/hooks/useTestCases";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GeneratedTestCase {
   id: string;
@@ -38,69 +41,18 @@ interface GeneratedTestCase {
   selected: boolean;
 }
 
-const sampleGeneratedTests: GeneratedTestCase[] = [
-  {
-    id: "gen-1",
-    name: "Verify user can successfully log in with valid credentials",
-    description: "Test the login functionality with correct username and password",
-    priority: "high",
-    type: "functional",
-    steps: [
-      { action: "Navigate to the login page", expected: "Login page is displayed with username and password fields" },
-      { action: "Enter valid username", expected: "Username is accepted" },
-      { action: "Enter valid password", expected: "Password is masked and accepted" },
-      { action: "Click the Login button", expected: "User is redirected to dashboard with success message" },
-    ],
-    selected: true,
-  },
-  {
-    id: "gen-2",
-    name: "Verify error message for invalid credentials",
-    description: "Test login validation with incorrect credentials",
-    priority: "high",
-    type: "functional",
-    steps: [
-      { action: "Navigate to the login page", expected: "Login page is displayed" },
-      { action: "Enter invalid username", expected: "Username field accepts input" },
-      { action: "Enter invalid password", expected: "Password field accepts input" },
-      { action: "Click the Login button", expected: "Error message 'Invalid credentials' is displayed" },
-    ],
-    selected: true,
-  },
-  {
-    id: "gen-3",
-    name: "Verify password field masking",
-    description: "Ensure password characters are hidden when typing",
-    priority: "medium",
-    type: "security",
-    steps: [
-      { action: "Navigate to the login page", expected: "Login page is displayed" },
-      { action: "Click on password field", expected: "Password field is focused" },
-      { action: "Type password characters", expected: "Characters are masked with dots or asterisks" },
-    ],
-    selected: false,
-  },
-  {
-    id: "gen-4",
-    name: "Verify session timeout after inactivity",
-    description: "Test that user session expires after configured inactivity period",
-    priority: "medium",
-    type: "security",
-    steps: [
-      { action: "Log in with valid credentials", expected: "User is logged in successfully" },
-      { action: "Wait for session timeout period (e.g., 30 minutes)", expected: "No activity during this period" },
-      { action: "Attempt to perform any action", expected: "User is redirected to login page with session expired message" },
-    ],
-    selected: false,
-  },
-];
-
 export default function AIGeneration() {
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatedTests, setGeneratedTests] = useState<GeneratedTestCase[]>([]);
   const [inputType, setInputType] = useState("description");
+  const [defaultPriority, setDefaultPriority] = useState("medium");
+  const [testType, setTestType] = useState("functional");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const { toast } = useToast();
+  const { data: projects } = useProjects();
+  const { bulkCreateTestCases } = useTestCases(selectedProjectId);
 
   const handleGenerate = async () => {
     if (!input.trim()) {
@@ -113,15 +65,42 @@ export default function AIGeneration() {
     }
 
     setIsGenerating(true);
-    // Simulate AI generation
-    setTimeout(() => {
-      setGeneratedTests(sampleGeneratedTests);
-      setIsGenerating(false);
+    setGeneratedTests([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-test-cases", {
+        body: { description: input, inputType, priority: defaultPriority, testType },
+      });
+
+      if (error) throw new Error(error.message || "Failed to generate test cases");
+      if (data?.error) throw new Error(data.error);
+      if (!data?.test_cases?.length) throw new Error("No test cases were generated");
+
+      const tests: GeneratedTestCase[] = data.test_cases.map((tc: any, i: number) => ({
+        id: `gen-${i + 1}`,
+        name: tc.name,
+        description: tc.description,
+        priority: tc.priority || defaultPriority,
+        type: tc.type || testType,
+        steps: tc.steps || [],
+        selected: true,
+      }));
+
+      setGeneratedTests(tests);
       toast({
         title: "Test cases generated",
-        description: `${sampleGeneratedTests.length} test cases have been generated.`,
+        description: `${tests.length} test cases have been generated by AI.`,
       });
-    }, 2000);
+    } catch (err: any) {
+      console.error("AI generation failed:", err);
+      toast({
+        title: "Generation failed",
+        description: err.message || "An error occurred while generating test cases.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const toggleTestSelection = (id: string) => {
@@ -132,7 +111,11 @@ export default function AIGeneration() {
     );
   };
 
-  const handleSaveSelected = () => {
+  const removeTest = (id: string) => {
+    setGeneratedTests((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleSaveSelected = async () => {
     const selected = generatedTests.filter((t) => t.selected);
     if (selected.length === 0) {
       toast({
@@ -142,13 +125,44 @@ export default function AIGeneration() {
       });
       return;
     }
-    toast({
-      title: "Test cases saved",
-      description: `${selected.length} test cases have been saved to the repository.`,
-    });
+
+    if (!selectedProjectId) {
+      toast({
+        title: "No project selected",
+        description: "Please select a project to save the test cases to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const inputs = selected.map((t) => ({
+        title: t.name,
+        description: t.description,
+        priority: t.priority,
+        test_type: t.type,
+        steps: t.steps,
+        project_id: selectedProjectId,
+        status: "draft",
+      }));
+
+      await bulkCreateTestCases.mutateAsync(inputs);
+      setGeneratedTests([]);
+      setInput("");
+    } catch (err: any) {
+      toast({
+        title: "Save failed",
+        description: err.message || "Failed to save test cases.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const priorityColors: Record<string, string> = {
+    critical: "bg-destructive text-destructive-foreground",
     high: "bg-chart-4 text-foreground",
     medium: "bg-chart-1 text-foreground",
     low: "bg-muted text-muted-foreground",
@@ -188,6 +202,20 @@ export default function AIGeneration() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
+                <Label>Target Project</Label>
+                <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a project to save tests to" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
                 <Label>Input Type</Label>
                 <Select value={inputType} onValueChange={setInputType}>
                   <SelectTrigger>
@@ -223,20 +251,10 @@ export default function AIGeneration() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload File
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  Supports .txt, .docx, .pdf
-                </span>
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Default Priority</Label>
-                  <Select defaultValue="medium">
+                  <Select value={defaultPriority} onValueChange={setDefaultPriority}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -250,7 +268,7 @@ export default function AIGeneration() {
                 </div>
                 <div className="grid gap-2">
                   <Label>Test Type</Label>
-                  <Select defaultValue="functional">
+                  <Select value={testType} onValueChange={setTestType}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -272,8 +290,8 @@ export default function AIGeneration() {
               >
                 {isGenerating ? (
                   <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating with AI...
                   </>
                 ) : (
                   <>
@@ -296,9 +314,12 @@ export default function AIGeneration() {
                   </CardDescription>
                 </div>
                 {generatedTests.length > 0 && (
-                  <Button onClick={handleSaveSelected}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Selected
+                  <Button onClick={handleSaveSelected} disabled={isSaving || !selectedProjectId}>
+                    {isSaving ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                    ) : (
+                      <><Save className="mr-2 h-4 w-4" /> Save Selected</>
+                    )}
                   </Button>
                 )}
               </div>
@@ -340,7 +361,7 @@ export default function AIGeneration() {
                               <Badge
                                 className={cn(
                                   "capitalize text-xs",
-                                  priorityColors[test.priority]
+                                  priorityColors[test.priority] || priorityColors.medium
                                 )}
                               >
                                 {test.priority}
@@ -358,27 +379,24 @@ export default function AIGeneration() {
                               Steps ({test.steps.length}):
                             </p>
                             <div className="space-y-1 pl-2 border-l-2 border-border">
-                              {test.steps.slice(0, 2).map((step, idx) => (
+                              {test.steps.slice(0, 3).map((step, idx) => (
                                 <p key={idx} className="text-xs text-muted-foreground">
                                   {idx + 1}. {step.action}
                                 </p>
                               ))}
-                              {test.steps.length > 2 && (
+                              {test.steps.length > 3 && (
                                 <p className="text-xs text-primary">
-                                  +{test.steps.length - 2} more steps
+                                  +{test.steps.length - 3} more steps
                                 </p>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 pt-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit2 className="mr-1 h-3 w-3" />
-                              Edit
-                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-destructive hover:text-destructive"
+                              onClick={() => removeTest(test.id)}
                             >
                               <Trash2 className="mr-1 h-3 w-3" />
                               Remove
