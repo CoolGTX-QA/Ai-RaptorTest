@@ -90,6 +90,22 @@ interface Project {
   created_by: string;
 }
 
+interface WorkspaceDashboardStats {
+  totalTestCases: number;
+  totalDefects: number;
+  totalTestRuns: number;
+  passRate: number;
+  openDefects: number;
+  recentActivities: Array<{
+    id: string;
+    action_type: string;
+    entity_type: string;
+    entity_name: string | null;
+    created_at: string;
+  }>;
+  projectHealthMap: Record<string, { passed: number; total: number }>;
+}
+
 export default function WorkspaceDetail() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
@@ -111,6 +127,15 @@ export default function WorkspaceDetail() {
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [projectForMembers, setProjectForMembers] = useState<Project | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<WorkspaceDashboardStats>({
+    totalTestCases: 0,
+    totalDefects: 0,
+    totalTestRuns: 0,
+    passRate: 0,
+    openDefects: 0,
+    recentActivities: [],
+    projectHealthMap: {},
+  });
 
   useEffect(() => {
     if (workspaceId && user) {
