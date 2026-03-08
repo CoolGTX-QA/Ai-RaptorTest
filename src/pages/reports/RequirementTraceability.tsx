@@ -87,21 +87,18 @@ export default function RequirementTraceability() {
             value={`${stats.fullCoverage}/${stats.totalRequirements}`}
             description={`${Math.round((stats.fullCoverage / stats.totalRequirements) * 100)}% complete`}
             icon={CheckCircle2}
-            iconClassName="text-chart-1"
             descriptionClassName="text-primary"
           />
           <StatCard
             title="Avg Coverage"
             value={`${stats.avgCoverage}%`}
             icon={Target}
-            iconClassName="text-chart-2"
           />
           <StatCard
             title="Linked Test Cases"
             value={stats.totalTestCases}
             description="Total linked"
             icon={Link2}
-            iconClassName="text-chart-3"
           />
         </div>
 
