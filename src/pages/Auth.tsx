@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug } from "lucide-react";
+import VaporizeTextCycle, { Tag } from "@/components/ui/vapour-text-effect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -219,7 +220,27 @@ export default function Auth() {
                 50% { background-position: -200% 0; }
               }
             `}</style>
-            <h1 className="text-2xl font-semibold text-foreground">Welcome to RaptorTest</h1>
+            <div className="w-full h-12">
+              <VaporizeTextCycle
+                texts={["Welcome to RaptorTest", "Modern Test Management", "AI-Powered Testing"]}
+                font={{
+                  fontFamily: "Work Sans, sans-serif",
+                  fontSize: "24px",
+                  fontWeight: 600,
+                }}
+                color="rgb(23, 23, 23)"
+                spread={4}
+                density={6}
+                animation={{
+                  vaporizeDuration: 1.5,
+                  fadeInDuration: 0.8,
+                  waitDuration: 2,
+                }}
+                direction="left-to-right"
+                alignment="center"
+                tag={Tag.H1}
+              />
+            </div>
             <p className="text-muted-foreground mt-2">
               Enter your credentials to access your account
             </p>
