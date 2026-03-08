@@ -195,7 +195,6 @@ export default function WorkspaceMembers() {
           workspaceName: workspace?.name || "Workspace",
           email: inviteEmail.toLowerCase(),
           role: inviteRole,
-          inviterId: user.id,
           inviterName: inviterProfile?.full_name || inviterProfile?.email || "A team member",
         },
       });
