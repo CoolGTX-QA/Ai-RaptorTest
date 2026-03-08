@@ -43,8 +43,8 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [runAllInProgress, setRunAllInProgress] = useState(false);
   const abortRef = useRef(false);
-  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
-    { role: "assistant", content: "I'm your AI testing assistant. Select a test case to see its details, or run tests to see results. I can help debug failures and suggest fixes." },
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string; _streaming?: boolean }[]>([
+    { role: "assistant", content: "I'm your AI testing assistant. Select a test case and ask me about errors — I'll analyze failures and suggest fixes using AI." },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [resultTab, setResultTab] = useState("script");
