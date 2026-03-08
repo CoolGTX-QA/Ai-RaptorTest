@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, Play, CheckCircle, XCircle, Clock, Loader2,
-  AlertTriangle, Code, Bot, RotateCcw, Send, StopCircle,
+  AlertTriangle, Code, Bot, RotateCcw, Send, StopCircle, Maximize2, Minimize2,
 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { BrowserPreview, type ExecutionStep } from "./BrowserPreview";
