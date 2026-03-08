@@ -582,6 +582,7 @@ export type Database = {
           notification_settings: Json | null
           project_id: string
           sla_settings: Json | null
+          tc_id_prefix: string
           test_environments: Json | null
           test_types: Json | null
           updated_at: string
@@ -600,6 +601,7 @@ export type Database = {
           notification_settings?: Json | null
           project_id: string
           sla_settings?: Json | null
+          tc_id_prefix?: string
           test_environments?: Json | null
           test_types?: Json | null
           updated_at?: string
@@ -618,6 +620,7 @@ export type Database = {
           notification_settings?: Json | null
           project_id?: string
           sla_settings?: Json | null
+          tc_id_prefix?: string
           test_environments?: Json | null
           test_types?: Json | null
           updated_at?: string
@@ -900,6 +903,7 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          display_id: string | null
           expected_result: string | null
           folder_id: string | null
           id: string
@@ -923,6 +927,7 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          display_id?: string | null
           expected_result?: string | null
           folder_id?: string | null
           id?: string
@@ -946,6 +951,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          display_id?: string | null
           expected_result?: string | null
           folder_id?: string | null
           id?: string
