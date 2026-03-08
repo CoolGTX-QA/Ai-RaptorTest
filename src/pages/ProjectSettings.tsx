@@ -300,6 +300,9 @@ export default function ProjectSettings() {
   const [environments, setEnvironments] = useState<TestEnvironment[]>(DEFAULT_ENVIRONMENTS);
   const [executionStatuses, setExecutionStatuses] = useState<ExecutionStatus[]>(DEFAULT_EXECUTION_STATUSES);
 
+  // Test Case ID Prefix
+  const [tcIdPrefix, setTcIdPrefix] = useState<string>("TC");
+
   // Notification & Automation Settings
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [automationSettings, setAutomationSettings] = useState<AutomationSettings>(DEFAULT_AUTOMATION_SETTINGS);
