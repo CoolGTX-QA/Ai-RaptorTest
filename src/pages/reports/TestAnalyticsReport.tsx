@@ -76,7 +76,6 @@ export default function TestAnalyticsReport() {
                 value={`${stats.testCoverage}%`}
                 description="Overall coverage"
                 icon={Target}
-                iconClassName="text-chart-1"
                 descriptionClassName="text-primary"
               />
               <StatCard
@@ -84,7 +83,6 @@ export default function TestAnalyticsReport() {
                 value={`${stats.automationRate}%`}
                 description="Automated tests"
                 icon={Zap}
-                iconClassName="text-chart-2"
                 descriptionClassName="text-primary"
               />
               <StatCard
@@ -92,7 +90,6 @@ export default function TestAnalyticsReport() {
                 value={`${stats.defectDetection}%`}
                 description="Detection rate"
                 icon={Percent}
-                iconClassName="text-chart-3"
                 descriptionClassName="text-primary"
               />
               <StatCard
@@ -100,7 +97,6 @@ export default function TestAnalyticsReport() {
                 value={stats.qualityScore}
                 description="Excellent rating"
                 icon={TrendingUp}
-                iconClassName="text-chart-4"
                 descriptionClassName="text-primary"
               />
             </>
