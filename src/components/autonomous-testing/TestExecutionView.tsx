@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { BrowserPreview, type ExecutionStep } from "./BrowserPreview";
-import { generateExecutionSteps, generateFailureDetails } from "./testStepGenerator";
+import { parseTestInstructions, buildExecutionSteps, generatePlaywrightScript, type HealingResult } from "./TestExecutionEngine";
+import { generateFailureDetails } from "./testStepGenerator";
 import { AutonomousProject, AutonomousTestCase, useAutonomousTesting } from "@/hooks/useAutonomousTesting";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
