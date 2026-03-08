@@ -79,6 +79,7 @@ interface ProjectSettings {
   sla_settings: SLASettings | null;
   test_types: TestType[] | null;
   execution_statuses: ExecutionStatus[] | null;
+  tc_id_prefix: string | null;
 }
 
 interface CustomStatus {
