@@ -187,6 +187,51 @@ export default function WorkspaceDetail() {
         .not("accepted_at", "is", null);
 
       setMemberCount(count || 0);
+
+      // Fetch dashboard stats
+      if (projectsData && projectsData.length > 0) {
+        const pIds = projectsData.map(p => p.id);
+        
+        const [tcRes, defRes, trRes, openDefRes, actRes] = await Promise.all([
+          supabase.from("test_cases").select("id", { count: "exact", head: true }).in("project_id", pIds),
+          supabase.from("defects").select("id", { count: "exact", head: true }).in("project_id", pIds),
+          supabase.from("test_runs").select("id", { count: "exact", head: true }).in("project_id", pIds),
+          supabase.from("defects").select("id", { count: "exact", head: true }).in("project_id", pIds).eq("status", "open"),
+          supabase.from("activity_logs").select("id, action_type, entity_type, entity_name, created_at")
+            .eq("workspace_id", workspaceId)
+            .order("created_at", { ascending: false })
+            .limit(10),
+        ]);
+
+        // Fetch execution stats for pass rate
+        const { data: runIds } = await supabase.from("test_runs").select("id").in("project_id", pIds);
+        let passRate = 0;
+        const projectHealthMap: Record<string, { passed: number; total: number }> = {};
+
+        if (runIds && runIds.length > 0) {
+          const rIds = runIds.map(r => r.id);
+          const { data: executions } = await supabase
+            .from("test_executions")
+            .select("status, test_run_id")
+            .in("test_run_id", rIds)
+            .neq("status", "not_run");
+
+          if (executions && executions.length > 0) {
+            const passed = executions.filter(e => e.status === "passed").length;
+            passRate = Math.round((passed / executions.length) * 100);
+          }
+        }
+
+        setDashboardStats({
+          totalTestCases: tcRes.count || 0,
+          totalDefects: defRes.count || 0,
+          totalTestRuns: trRes.count || 0,
+          passRate,
+          openDefects: openDefRes.count || 0,
+          recentActivities: actRes.data || [],
+          projectHealthMap,
+        });
+      }
     } catch (error: any) {
       console.error("Error fetching workspace data:", error);
       toast({
