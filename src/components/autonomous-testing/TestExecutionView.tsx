@@ -520,11 +520,12 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                   <div className="p-2.5 border-t border-border/60 shrink-0">
                     <div className="flex gap-1.5">
                       <Textarea
-                        placeholder="Ask about failures..."
+                        placeholder="Ask about failures, errors, or how to fix tests..."
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         rows={2}
                         className="resize-none text-xs min-h-[52px]"
+                        disabled={isChatLoading}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); }
                         }}
