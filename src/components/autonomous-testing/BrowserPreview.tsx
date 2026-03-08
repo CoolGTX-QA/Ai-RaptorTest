@@ -71,7 +71,9 @@ export function BrowserPreview({ baseUrl, testName, testDescription, testStatus,
     let stepIdx = 0;
     const runNextStep = () => {
       if (stepIdx >= executionSteps.length) {
-        onStepsComplete?.(true);
+        // Determine pass/fail: 70% chance pass
+        const passed = Math.random() > 0.3;
+        onStepsComplete?.(passed);
         return;
       }
 

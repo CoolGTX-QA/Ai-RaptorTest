@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, Play, CheckCircle, XCircle, Clock, Loader2,
-  AlertTriangle, Code, Bot, RotateCcw, Send, StopCircle,
+  AlertTriangle, Code, Bot, RotateCcw, Send, StopCircle, Maximize2, Minimize2,
 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { BrowserPreview, type ExecutionStep } from "./BrowserPreview";
@@ -78,6 +78,8 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
   ]);
   const [chatInput, setChatInput] = useState("");
   const [resultTab, setResultTab] = useState("script");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const stepsResolveRef = useRef<((passed: boolean) => void) | null>(null);
 
   const { data: testCases = [], refetch } = useQuery({
     queryKey: ["autonomous-test-cases", autonomousProject.id],
@@ -131,9 +133,10 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps to execute.`,
     }]);
 
-    // Wait for steps to complete (each step ~500-1200ms)
-    const totalDuration = steps.length * 700 + 500;
-    await new Promise((r) => setTimeout(r, totalDuration));
+    // Wait for BrowserPreview to finish stepping through all steps
+    const passed = await new Promise<boolean>((resolve) => {
+      stepsResolveRef.current = resolve;
+    });
 
     if (abortRef.current) {
       setIsExecuting(false);
@@ -141,8 +144,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       return;
     }
 
-    // Determine pass/fail
-    const passed = Math.random() > 0.3;
+    const totalDuration = steps.reduce((sum, s) => sum + (s.duration_ms || 700), 0);
     let result: Partial<AutonomousTestCase>;
 
     if (passed) {
@@ -183,6 +185,13 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
     setSelectedTest((prev) => prev?.id === tc.id ? { ...prev, ...result } as AutonomousTestCase : prev);
     refetch();
   }, [autonomousProject.base_url, updateTestCase, refetch]);
+
+  const handleStepsComplete = useCallback((passed: boolean) => {
+    if (stepsResolveRef.current) {
+      stepsResolveRef.current(passed);
+      stepsResolveRef.current = null;
+    }
+  }, []);
 
   const runAll = async () => {
     abortRef.current = false;
@@ -314,30 +323,44 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
           </div>
 
           {/* CENTER: Execution Preview */}
-          <div className="col-span-5">
+          <div className={cn(
+            isFullscreen
+              ? "fixed inset-0 z-50 bg-background p-4"
+              : "col-span-5"
+          )}>
             <Card className="h-full flex flex-col overflow-hidden">
               <CardHeader className="py-3 px-4 flex-row items-center justify-between shrink-0">
                 <CardTitle className="text-sm truncate mr-2">
                   {selectedTest ? selectedTest.test_name : "Select a test"}
                 </CardTitle>
-                {selectedTest && (
+                <div className="flex items-center gap-1">
+                  {selectedTest && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => executeTest(selectedTest)}
+                      disabled={isExecuting}
+                    >
+                      {runningTests.has(selectedTest.id) ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running</>
+                      ) : (
+                        <><Play className="h-3 w-3 mr-1" /> Run</>
+                      )}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => executeTest(selectedTest)}
-                    disabled={isExecuting}
+                    variant="ghost"
+                    onClick={() => setIsFullscreen((f) => !f)}
+                    title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
                   >
-                    {runningTests.has(selectedTest.id) ? (
-                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running</>
-                    ) : (
-                      <><Play className="h-3 w-3 mr-1" /> Run</>
-                    )}
+                    {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                   </Button>
-                )}
+                </div>
               </CardHeader>
               <div className="flex-1 overflow-hidden">
                 <ResizablePanelGroup direction="vertical">
-                  <ResizablePanel defaultSize={55} minSize={30}>
+                  <ResizablePanel defaultSize={isFullscreen ? 70 : 55} minSize={30}>
                     <BrowserPreview
                       baseUrl={autonomousProject.base_url}
                       testName={selectedTest?.test_name || null}
@@ -345,10 +368,11 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                       testStatus={selectedTest?.status || "draft"}
                       isRunning={selectedTest ? runningTests.has(selectedTest.id) : false}
                       executionSteps={currentSteps}
+                      onStepsComplete={handleStepsComplete}
                     />
                   </ResizablePanel>
                   <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={45} minSize={20}>
+                  <ResizablePanel defaultSize={isFullscreen ? 30 : 45} minSize={15}>
                     {selectedTest && (
                       <Tabs value={resultTab} onValueChange={setResultTab} className="h-full flex flex-col">
                         <TabsList className="mx-4 mt-2">
