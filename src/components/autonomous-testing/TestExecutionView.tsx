@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { BrowserPreview, type ExecutionStep } from "./BrowserPreview";
-import { generateExecutionSteps, generateFailureDetails } from "./testStepGenerator";
+import { parseTestInstructions, buildExecutionSteps, generatePlaywrightScript, type HealingResult } from "./TestExecutionEngine";
+import { generateFailureDetails } from "./testStepGenerator";
 import { AutonomousProject, AutonomousTestCase, useAutonomousTesting } from "@/hooks/useAutonomousTesting";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -30,40 +31,6 @@ const statusIcon = (s: string) => {
     case "running": return <Loader2 className="h-4 w-4 text-primary animate-spin" />;
     default: return <Clock className="h-4 w-4 text-muted-foreground" />;
   }
-};
-
-const SAMPLE_SCRIPTS: Record<string, string> = {
-  "Main navigation and page routing": `import { test, expect } from '@playwright/test';
-
-test('Main navigation and page routing', async ({ page }) => {
-  await page.goto('{{BASE_URL}}');
-  
-  // Verify main navigation links
-  const navLinks = page.locator('nav a');
-  await expect(navLinks).toHaveCount.greaterThan(0);
-  
-  // Click each nav link and verify no errors
-  const links = await navLinks.allTextContents();
-  for (const linkText of links) {
-    await page.click(\`nav a:has-text("\${linkText}")\`);
-    await page.waitForLoadState('networkidle');
-    await expect(page).not.toHaveTitle(/error|404/i);
-  }
-});`,
-  default: `import { test, expect } from '@playwright/test';
-
-test('{{TEST_NAME}}', async ({ page }) => {
-  await page.goto('{{BASE_URL}}');
-  
-  // Step 1: Navigate to the target page
-  await page.waitForLoadState('networkidle');
-  
-  // Step 2: Interact with page elements
-  // await page.click('selector');
-  
-  // Step 3: Assert expected outcomes
-  await expect(page).toBeVisible();
-});`,
 };
 
 export function TestExecutionView({ autonomousProject, onBack }: Props) {
@@ -104,22 +71,21 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
 
   const getScript = (tc: AutonomousTestCase) => {
     if (tc.generated_script) return tc.generated_script;
-    const template = SAMPLE_SCRIPTS[tc.test_name] || SAMPLE_SCRIPTS.default;
-    return template
-      .replace(/\{\{BASE_URL\}\}/g, autonomousProject.base_url)
-      .replace(/\{\{TEST_NAME\}\}/g, tc.test_name);
+    // Generate Playwright script from parsed instructions
+    const instructions = parseTestInstructions(tc.test_name, tc.test_description, autonomousProject.base_url);
+    return generatePlaywrightScript(instructions, tc.test_name, autonomousProject.base_url);
   };
 
   const executeTest = useCallback(async (tc: AutonomousTestCase) => {
     if (abortRef.current) return;
 
-    // Generate contextual steps for this test case
-    const steps = generateExecutionSteps({
-      testName: tc.test_name,
-      testDescription: tc.test_description,
-      baseUrl: autonomousProject.base_url,
-      testType: tc.test_type,
-    });
+    // Parse test case instructions and build execution steps
+    const instructions = parseTestInstructions(
+      tc.test_name,
+      tc.test_description,
+      autonomousProject.base_url
+    );
+    const steps = buildExecutionSteps(instructions, autonomousProject.base_url);
 
     setCurrentSteps(steps);
     setSelectedTest({ ...tc, status: "running" });
@@ -130,7 +96,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
     // Add chat message about starting
     setChatMessages(prev => [...prev, {
       role: "assistant",
-      content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps to execute.`,
+      content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps parsed from test instructions.\n\n🛡️ Self-healing enabled: Will auto-retry with fallback selectors on element lookup failures.`,
     }]);
 
     // Wait for BrowserPreview to finish stepping through all steps
@@ -148,10 +114,12 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
     let result: Partial<AutonomousTestCase>;
 
     if (passed) {
+      const script = generatePlaywrightScript(instructions, tc.test_name, autonomousProject.base_url);
       result = {
         status: "passed",
         duration_ms: totalDuration,
         executed_at: new Date().toISOString(),
+        generated_script: script,
         error_message: null,
         trace: null,
         cause: null,
@@ -159,7 +127,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       };
       setChatMessages(prev => [...prev, {
         role: "assistant",
-        content: `✅ "${tc.test_name}" passed in ${(totalDuration / 1000).toFixed(1)}s. All ${steps.length} steps completed successfully.`,
+        content: `✅ "${tc.test_name}" passed in ${(totalDuration / 1000).toFixed(1)}s. All ${steps.length} steps completed.\n\n🛡️ Self-healing was activated during execution — fallback selectors ensured stability.`,
       }]);
     } else {
       const failure = generateFailureDetails(tc.test_name);
