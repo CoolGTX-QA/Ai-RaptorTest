@@ -184,14 +184,14 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
     setRunningTests((prev) => { const s = new Set(prev); s.delete(tc.id); return s; });
     setSelectedTest((prev) => prev?.id === tc.id ? { ...prev, ...result } as AutonomousTestCase : prev);
     refetch();
+  }, [autonomousProject.base_url, updateTestCase, refetch]);
+
   const handleStepsComplete = useCallback((passed: boolean) => {
     if (stepsResolveRef.current) {
       stepsResolveRef.current(passed);
       stepsResolveRef.current = null;
     }
   }, []);
-
-  }, [autonomousProject.base_url, updateTestCase, refetch]);
 
   const runAll = async () => {
     abortRef.current = false;
