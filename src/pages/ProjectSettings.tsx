@@ -373,6 +373,7 @@ export default function ProjectSettings() {
           sla_settings: settingsData.sla_settings as unknown as SLASettings | null,
           test_types: settingsData.test_types as unknown as TestType[] | null,
           execution_statuses: settingsData.execution_statuses as unknown as ExecutionStatus[] | null,
+          tc_id_prefix: (settingsData as any).tc_id_prefix || "TC",
         });
         
         // Populate local state
@@ -387,6 +388,7 @@ export default function ProjectSettings() {
         setSlaSettings((settingsData.sla_settings as unknown as SLASettings) || DEFAULT_SLA_SETTINGS);
         setTestTypes((settingsData.test_types as unknown as TestType[]) || DEFAULT_TEST_TYPES);
         setExecutionStatuses((settingsData.execution_statuses as unknown as ExecutionStatus[]) || DEFAULT_EXECUTION_STATUSES);
+        setTcIdPrefix((settingsData as any).tc_id_prefix || "TC");
       }
     } catch (error: any) {
       console.error("Error fetching project settings:", error);
