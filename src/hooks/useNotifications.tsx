@@ -141,17 +141,18 @@
    message: string;
    entityType?: string;
    entityId?: string;
- }) {
-   const { error } = await supabase.from("notifications").insert({
-     user_id: userId,
-     workspace_id: workspaceId || null,
-     project_id: projectId || null,
-     type,
-     title,
-     message,
-     entity_type: entityType || null,
-     entity_id: entityId || null,
-   });
+  }) {
+    // Use the SECURITY DEFINER RPC to safely create notifications for any user
+    const { error } = await supabase.rpc("create_notification", {
+      p_user_id: userId,
+      p_workspace_id: workspaceId || null,
+      p_project_id: projectId || null,
+      p_type: type,
+      p_title: title,
+      p_message: message,
+      p_entity_type: entityType || null,
+      p_entity_id: entityId || null,
+    });
  
    if (error) {
      console.error("Failed to create notification:", error);
