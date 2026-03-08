@@ -685,7 +685,7 @@ export default function Dashboard() {
                   className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group"
                 >
                   <div className="flex items-center gap-3">
-                    <link.icon className="h-5 w-5 text-primary" />
+                    <link.icon className="h-5 w-5 text-primary transition-transform duration-200 group-hover:scale-125" />
                     <div>
                       <p className="text-sm font-medium text-foreground">{link.title}</p>
                       <p className="text-xs text-muted-foreground">{link.description}</p>
