@@ -133,9 +133,10 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       content: `🚀 Starting execution of "${tc.test_name}" — ${steps.length} steps to execute.`,
     }]);
 
-    // Wait for steps to complete (each step ~500-1200ms)
-    const totalDuration = steps.length * 700 + 500;
-    await new Promise((r) => setTimeout(r, totalDuration));
+    // Wait for BrowserPreview to finish stepping through all steps
+    const passed = await new Promise<boolean>((resolve) => {
+      stepsResolveRef.current = resolve;
+    });
 
     if (abortRef.current) {
       setIsExecuting(false);
@@ -143,8 +144,7 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
       return;
     }
 
-    // Determine pass/fail
-    const passed = Math.random() > 0.3;
+    const totalDuration = steps.reduce((sum, s) => sum + (s.duration_ms || 700), 0);
     let result: Partial<AutonomousTestCase>;
 
     if (passed) {
