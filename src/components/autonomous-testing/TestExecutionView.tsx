@@ -494,15 +494,27 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                         <div
                           key={i}
                           className={cn(
-                            "rounded-lg px-3 py-2 text-xs whitespace-pre-wrap leading-relaxed",
+                            "rounded-lg px-3 py-2 text-xs leading-relaxed",
                             msg.role === "user"
                               ? "bg-primary text-primary-foreground ml-6"
                               : "bg-muted text-foreground mr-4"
                           )}
                         >
-                          {msg.content}
+                          {msg.role === "assistant" ? (
+                            <div className="prose prose-xs prose-neutral dark:prose-invert max-w-none [&_p]:text-xs [&_p]:my-1 [&_li]:text-xs [&_code]:text-[10px] [&_pre]:text-[10px] [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            msg.content
+                          )}
                         </div>
                       ))}
+                      {isChatLoading && chatMessages[chatMessages.length - 1]?.role !== "assistant" && (
+                        <div className="bg-muted text-foreground mr-4 rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          <span className="text-muted-foreground">Analyzing...</span>
+                        </div>
+                      )}
                     </div>
                   </ScrollArea>
                   <div className="p-2.5 border-t border-border/60 shrink-0">
