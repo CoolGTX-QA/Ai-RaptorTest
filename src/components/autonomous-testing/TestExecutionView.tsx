@@ -531,8 +531,8 @@ export function TestExecutionView({ autonomousProject, onBack }: Props) {
                         }}
                       />
                       <div className="flex flex-col gap-1">
-                        <Button size="icon" className="h-6 w-6" onClick={handleSendChat}>
-                          <Send className="h-3 w-3" />
+                        <Button size="icon" className="h-6 w-6" onClick={handleSendChat} disabled={isChatLoading}>
+                          {isChatLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                         </Button>
                         {selectedTest && (
                           <Button
