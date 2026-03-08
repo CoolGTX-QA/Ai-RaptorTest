@@ -17,6 +17,9 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RoleBadge } from "@/components/RoleBadge";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
+import { HealthProgressBar } from "@/components/HealthProgressBar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppRole } from "@/hooks/useRBAC";
 import { logActivityDirect } from "@/hooks/useActivityLog";
 import {
@@ -60,6 +63,13 @@ import {
   TestTube2,
   Settings,
   UserCog,
+  Activity,
+  Bug,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 
 interface Workspace {
