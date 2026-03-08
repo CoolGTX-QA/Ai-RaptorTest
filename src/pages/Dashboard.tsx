@@ -33,7 +33,8 @@ import {
 } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { format, subMonths, startOfMonth } from "date-fns";
 
 interface Project {
   id: string;
@@ -57,48 +58,21 @@ interface DashboardStats {
   totalExecutions: number;
 }
 
-const pieData = [
-  { name: "Passed", value: 58, color: "hsl(var(--chart-1))" },
-  { name: "Not Run", value: 20, color: "hsl(var(--chart-5))" },
-  { name: "Failed", value: 14, color: "hsl(var(--destructive))" },
-  { name: "Blocked", value: 8, color: "hsl(var(--chart-4))" },
-];
+interface ExecutionStatusCounts {
+  passed: number;
+  failed: number;
+  blocked: number;
+  notRun: number;
+}
 
-const trendData = [
-  { month: "Jan", passed: 30, failed: 8, blocked: 2 },
-  { month: "Feb", passed: 35, failed: 6, blocked: 4 },
-  { month: "Mar", passed: 28, failed: 10, blocked: 3 },
-  { month: "Apr", passed: 42, failed: 5, blocked: 2 },
-  { month: "May", passed: 38, failed: 7, blocked: 1 },
-  { month: "Jun", passed: 45, failed: 4, blocked: 2 },
-];
-
-const recentActivity = [
-  {
-    testCase: "User profile update validation",
-    action: "was updated",
-    user: "Alex Morgan",
-    time: "3 hours ago",
-  },
-  {
-    testCase: "Login authentication flow",
-    action: "was executed",
-    user: "Sarah Chen",
-    time: "5 hours ago",
-  },
-  {
-    testCase: "Payment gateway integration",
-    action: "failed",
-    user: "James Wilson",
-    time: "6 hours ago",
-  },
-  {
-    testCase: "API response validation",
-    action: "was approved",
-    user: "Emily Davis",
-    time: "1 day ago",
-  },
-];
+interface ActivityItem {
+  id: string;
+  entityName: string;
+  actionType: string;
+  userEmail: string;
+  userName: string | null;
+  createdAt: string;
+}
 
 const quickLinks = [
   {
@@ -141,6 +115,23 @@ export default function Dashboard() {
     totalExecutions: 0,
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [statusCounts, setStatusCounts] = useState<ExecutionStatusCounts>({ passed: 0, failed: 0, blocked: 0, notRun: 0 });
+  const [trendData, setTrendData] = useState<{ month: string; passed: number; failed: number; blocked: number }[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  const pieData = useMemo(() => {
+    const total = statusCounts.passed + statusCounts.failed + statusCounts.blocked + statusCounts.notRun;
+    if (total === 0) return [
+      { name: "No Data", value: 100, color: "hsl(var(--muted))" },
+    ];
+    return [
+      { name: "Passed", value: Math.round((statusCounts.passed / total) * 100), color: "hsl(var(--chart-1))" },
+      { name: "Not Run", value: Math.round((statusCounts.notRun / total) * 100), color: "hsl(var(--chart-5))" },
+      { name: "Failed", value: Math.round((statusCounts.failed / total) * 100), color: "hsl(var(--destructive))" },
+      { name: "Blocked", value: Math.round((statusCounts.blocked / total) * 100), color: "hsl(var(--chart-4))" },
+    ].filter(d => d.value > 0);
+  }, [statusCounts]);
 
   useEffect(() => {
     if (!user) return;
@@ -148,6 +139,7 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       setLoadingProjects(true);
       setLoadingStats(true);
+      setLoadingActivity(true);
       
       try {
         // Get all workspaces user is a member of
@@ -163,16 +155,10 @@ export default function Dashboard() {
 
         if (!memberships || memberships.length === 0) {
           setProjects([]);
-          setStats({
-            workspaceCount: 0,
-            projectCount: 0,
-            testCaseCount: 0,
-            executionRate: 0,
-            executedCount: 0,
-            totalExecutions: 0,
-          });
+          setStats({ workspaceCount: 0, projectCount: 0, testCaseCount: 0, executionRate: 0, executedCount: 0, totalExecutions: 0 });
           setLoadingStats(false);
           setLoadingProjects(false);
+          setLoadingActivity(false);
           return;
         }
 
@@ -194,8 +180,6 @@ export default function Dashboard() {
         if (projectsError) throw projectsError;
 
         const projectCount = projectsData?.length || 0;
-
-        // Get project IDs for further queries
         const projectIds = projectsData?.map((p) => p.id) || [];
 
         // Fetch test cases count
@@ -208,54 +192,78 @@ export default function Dashboard() {
           testCaseCount = count || 0;
         }
 
-        // Fetch test executions for execution rate and project health
+        // Fetch test executions for status counts, trends, and project health
         let executedCount = 0;
         let totalExecutions = 0;
-        
-        // Map to store health data per project
         const projectHealthMap = new Map<string, { passed: number; total: number }>();
+        let allStatusCounts: ExecutionStatusCounts = { passed: 0, failed: 0, blocked: 0, notRun: 0 };
+        const monthlyData = new Map<string, { passed: number; failed: number; blocked: number }>();
         
         if (projectIds.length > 0) {
-          // Get test runs for these projects with project_id
           const { data: testRuns } = await supabase
             .from("test_runs")
-            .select("id, project_id")
+            .select("id, project_id, created_at")
             .in("project_id", projectIds);
 
           if (testRuns && testRuns.length > 0) {
             const runIds = testRuns.map((r) => r.id);
-            
-            // Create a map from run_id to project_id
             const runToProjectMap = new Map(testRuns.map((r) => [r.id, r.project_id]));
-            
-            // Get all executions with status
+            const runToDateMap = new Map(testRuns.map((r) => [r.id, r.created_at]));
+
             const { data: executions } = await supabase
               .from("test_executions")
               .select("test_run_id, status")
               .in("test_run_id", runIds);
             
             if (executions) {
-              // Calculate totals for execution rate
               totalExecutions = executions.length;
-              executedCount = executions.filter((e) => e.status !== "not_run").length;
-              
-              // Calculate health per project
               executions.forEach((exec) => {
                 const projectId = runToProjectMap.get(exec.test_run_id);
+                const runDate = runToDateMap.get(exec.test_run_id);
+
+                // Overall status counts
+                if (exec.status === "passed") allStatusCounts.passed++;
+                else if (exec.status === "failed") allStatusCounts.failed++;
+                else if (exec.status === "blocked") allStatusCounts.blocked++;
+                else allStatusCounts.notRun++;
+
+                if (exec.status !== "not_run") executedCount++;
+
+                // Per-project health
                 if (projectId) {
                   const current = projectHealthMap.get(projectId) || { passed: 0, total: 0 };
                   if (exec.status !== "not_run") {
                     current.total += 1;
-                    if (exec.status === "passed") {
-                      current.passed += 1;
-                    }
+                    if (exec.status === "passed") current.passed += 1;
                   }
                   projectHealthMap.set(projectId, current);
+                }
+
+                // Monthly trend
+                if (runDate) {
+                  const monthKey = format(new Date(runDate), "MMM");
+                  const current = monthlyData.get(monthKey) || { passed: 0, failed: 0, blocked: 0 };
+                  if (exec.status === "passed") current.passed++;
+                  else if (exec.status === "failed") current.failed++;
+                  else if (exec.status === "blocked") current.blocked++;
+                  monthlyData.set(monthKey, current);
                 }
               });
             }
           }
         }
+
+        setStatusCounts(allStatusCounts);
+
+        // Build trend data for last 6 months
+        const last6Months = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = subMonths(new Date(), i);
+          const key = format(d, "MMM");
+          const data = monthlyData.get(key) || { passed: 0, failed: 0, blocked: 0 };
+          last6Months.push({ month: key, ...data });
+        }
+        setTrendData(last6Months);
 
         // Build projects with health data
         const projectsWithWorkspace = (projectsData || []).map((p) => {
@@ -278,25 +286,56 @@ export default function Dashboard() {
           ? Math.round((executedCount / totalExecutions) * 100) 
           : 0;
 
-        setStats({
-          workspaceCount,
-          projectCount,
-          testCaseCount,
-          executionRate,
-          executedCount,
-          totalExecutions,
-        });
+        setStats({ workspaceCount, projectCount, testCaseCount, executionRate, executedCount, totalExecutions });
+
+        // Fetch real recent activity
+        try {
+          const { data: activities } = await supabase
+            .from("activity_logs")
+            .select("id, entity_name, action_type, user_id, created_at")
+            .order("created_at", { ascending: false })
+            .limit(8);
+
+          if (activities && activities.length > 0) {
+            const userIds = [...new Set(activities.map((a) => a.user_id))];
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, full_name, email")
+              .in("id", userIds);
+            const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+            setRecentActivity(activities.map((a) => ({
+              id: a.id,
+              entityName: a.entity_name || "Unknown",
+              actionType: a.action_type,
+              userEmail: profileMap.get(a.user_id)?.email || "Unknown",
+              userName: profileMap.get(a.user_id)?.full_name || null,
+              createdAt: a.created_at,
+            })));
+          }
+        } catch {}
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
         setLoadingProjects(false);
         setLoadingStats(false);
+        setLoadingActivity(false);
       }
     };
 
     fetchDashboardData();
   }, [user]);
+
+  const formatTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
 
   return (
     <AppLayout>
@@ -327,21 +366,16 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* Workspaces */}
           <Card 
             className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/workspaces")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Workspaces
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Workspaces</CardTitle>
               <Layers className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {loadingStats ? <Skeleton className="h-8 w-16" /> : (
                 <>
                   <div className="text-2xl font-bold text-foreground">{stats.workspaceCount}</div>
                   <p className="text-xs text-primary">Click to view all</p>
@@ -350,21 +384,16 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Projects */}
           <Card 
             className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/projects")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Projects
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
               <FolderKanban className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {loadingStats ? <Skeleton className="h-8 w-16" /> : (
                 <>
                   <div className="text-2xl font-bold text-foreground">{stats.projectCount}</div>
                   <p className="text-xs text-primary">Click to view all</p>
@@ -373,21 +402,16 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Test Cases */}
           <Card 
             className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/test-repository")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Test Cases
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Test Cases</CardTitle>
               <TestTube2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {loadingStats ? <Skeleton className="h-8 w-16" /> : (
                 <>
                   <div className="text-2xl font-bold text-foreground">{stats.testCaseCount}</div>
                   <p className="text-xs text-primary">Click to manage</p>
@@ -396,21 +420,16 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Execution Rate */}
           <Card 
             className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/test-execution")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Execution Rate
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Execution Rate</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
+              {loadingStats ? <Skeleton className="h-8 w-16" /> : (
                 <>
                   <div className="text-2xl font-bold text-foreground">{stats.executionRate}%</div>
                   <p className="text-xs text-muted-foreground">
@@ -468,43 +487,42 @@ export default function Dashboard() {
             ) : (
               <ScrollArea className="h-[280px]">
                 <div className="space-y-2 pr-4">
-                    {projects.slice(0, 10).map((project) => (
-                      <div
-                        key={project.id}
-                        onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
-                        className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group cursor-pointer"
-                      >
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 rounded-lg shrink-0">
-                            <AvatarImage src={project.logo_url || undefined} alt={project.name} />
-                            <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                              {project.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground truncate">{project.name}</p>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {project.workspace_name}
-                            </p>
-                            {/* Health Progress Bar */}
-                            <div className="mt-2">
-                              <HealthProgressBar 
-                                percentage={project.healthPercentage}
-                                totalExecuted={project.totalExecuted}
-                              />
-                            </div>
+                  {projects.slice(0, 10).map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
+                      className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <Avatar className="h-10 w-10 rounded-lg shrink-0">
+                          <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                          <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                            {project.name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{project.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {project.workspace_name}
+                          </p>
+                          <div className="mt-2">
+                            <HealthProgressBar 
+                              percentage={project.healthPercentage}
+                              totalExecuted={project.totalExecuted}
+                            />
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <Badge
-                            variant={project.status === "active" ? "default" : "secondary"}
-                          >
-                            {project.status}
-                          </Badge>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                        </div>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Badge
+                          variant={project.status === "active" ? "default" : "secondary"}
+                        >
+                          {project.status}
+                        </Badge>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
             )}
@@ -520,39 +538,45 @@ export default function Dashboard() {
               <CardDescription>Current test execution results</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="h-[200px] w-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+              {loadingStats ? (
+                <div className="flex items-center justify-center h-[200px]">
+                  <Skeleton className="h-40 w-40 rounded-full" />
                 </div>
-                <div className="space-y-3">
-                  {pieData.map((item) => (
-                    <div key={item.name} className="flex items-center gap-3">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-sm text-muted-foreground">{item.name}:</span>
-                      <span className="font-semibold text-foreground">{item.value}%</span>
-                    </div>
-                  ))}
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="h-[200px] w-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-3">
+                    {pieData.map((item) => (
+                      <div key={item.name} className="flex items-center gap-3">
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm text-muted-foreground">{item.name}:</span>
+                        <span className="font-semibold text-foreground">{item.value}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -583,30 +607,9 @@ export default function Dashboard() {
                         borderRadius: "8px",
                       }}
                     />
-                    <Area
-                      type="monotone"
-                      dataKey="passed"
-                      stackId="1"
-                      stroke="hsl(var(--chart-1))"
-                      fill="hsl(var(--chart-1))"
-                      fillOpacity={0.6}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="failed"
-                      stackId="1"
-                      stroke="hsl(var(--destructive))"
-                      fill="hsl(var(--destructive))"
-                      fillOpacity={0.6}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="blocked"
-                      stackId="1"
-                      stroke="hsl(var(--chart-4))"
-                      fill="hsl(var(--chart-4))"
-                      fillOpacity={0.6}
-                    />
+                    <Area type="monotone" dataKey="passed" stackId="1" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="failed" stackId="1" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="blocked" stackId="1" stroke="hsl(var(--chart-4))" fill="hsl(var(--chart-4))" fillOpacity={0.6} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -623,29 +626,48 @@ export default function Dashboard() {
               <CardDescription>Latest updates from your team</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 rounded-lg p-3 transition-colors hover:bg-accent"
-                  >
-                    <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        Test case{" "}
-                        <span className="font-medium">"{activity.testCase}"</span>{" "}
-                        {activity.action}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        by {activity.user} • {activity.time}
-                      </p>
+              {loadingActivity ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-3">
+                      <Skeleton className="h-5 w-5 rounded-full" />
+                      <div className="flex-1 space-y-1">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/3" />
+                      </div>
                     </div>
-                    {activity.action === "failed" && (
-                      <Badge variant="destructive">Failed</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : recentActivity.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Clock className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm text-muted-foreground">No recent activity yet</p>
+                  <p className="text-xs text-muted-foreground">Activity will appear here as you work with test cases, runs, and defects.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-4 rounded-lg p-3 transition-colors hover:bg-accent"
+                    >
+                      <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          <span className="font-medium">"{activity.entityName}"</span>{" "}
+                          was {activity.actionType}d
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          by {activity.userName || activity.userEmail} • {formatTimeAgo(activity.createdAt)}
+                        </p>
+                      </div>
+                      {activity.actionType === "delete" && (
+                        <Badge variant="destructive">Deleted</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -40,78 +41,9 @@ import {
   CartesianGrid,
 } from "recharts";
 import { cn } from "@/lib/utils";
-
-const riskDistribution = [
-  { name: "High Risk", value: 3, color: "hsl(var(--destructive))" },
-  { name: "Medium Risk", value: 12, color: "hsl(var(--chart-4))" },
-  { name: "Low Risk", value: 8, color: "hsl(var(--chart-1))" },
-];
-
-const riskCoverageData = [
-  { category: "Functional", covered: 85, uncovered: 15 },
-  { category: "Security", covered: 65, uncovered: 35 },
-  { category: "Performance", covered: 70, uncovered: 30 },
-  { category: "Integration", covered: 50, uncovered: 50 },
-];
-
-const testCaseRisks = [
-  {
-    name: "User Login Authentication",
-    type: "Functional",
-    complexity: "Low",
-    riskLevel: "Medium",
-    riskScore: 70,
-  },
-  {
-    name: "Password Reset Function",
-    type: "Functional",
-    complexity: "Low",
-    riskLevel: "Medium",
-    riskScore: 70,
-  },
-  {
-    name: "Security - SQL Injection Prevention",
-    type: "Security",
-    complexity: "High",
-    riskLevel: "High",
-    riskScore: 89,
-  },
-  {
-    name: "Shopping Cart Total",
-    type: "Functional",
-    complexity: "Medium",
-    riskLevel: "Medium",
-    riskScore: 65,
-  },
-  {
-    name: "API Response Time",
-    type: "Performance",
-    complexity: "Medium",
-    riskLevel: "Medium",
-    riskScore: 65,
-  },
-  {
-    name: "Performance Test - Home Page Load",
-    type: "Performance",
-    complexity: "Low",
-    riskLevel: "Low",
-    riskScore: 49,
-  },
-  {
-    name: "Product Search",
-    type: "Functional",
-    complexity: "Low",
-    riskLevel: "Low",
-    riskScore: 48,
-  },
-  {
-    name: "Cross-Browser Compatibility",
-    type: "Compatibility",
-    complexity: "Low",
-    riskLevel: "Low",
-    riskScore: 34,
-  },
-];
+import { useRiskScoring } from "@/hooks/useRiskData";
+import { useProjects } from "@/hooks/useProjects";
+import { useState, useMemo } from "react";
 
 const riskLevelColors: Record<string, string> = {
   High: "bg-destructive text-destructive-foreground",
@@ -120,6 +52,37 @@ const riskLevelColors: Record<string, string> = {
 };
 
 export default function RiskAssessment() {
+  const { data: projects } = useProjects();
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("all-projects");
+  const { data: riskModules, isLoading } = useRiskScoring(selectedProjectId === "all-projects" ? undefined : selectedProjectId);
+
+  const riskDistribution = useMemo(() => {
+    if (!riskModules?.length) return [
+      { name: "No Data", value: 1, color: "hsl(var(--muted))" },
+    ];
+    const high = riskModules.filter((m) => m.level === "High").length;
+    const medium = riskModules.filter((m) => m.level === "Medium").length;
+    const low = riskModules.filter((m) => m.level === "Low").length;
+    return [
+      { name: "High Risk", value: high, color: "hsl(var(--destructive))" },
+      { name: "Medium Risk", value: medium, color: "hsl(var(--chart-4))" },
+      { name: "Low Risk", value: low, color: "hsl(var(--chart-1))" },
+    ].filter(d => d.value > 0);
+  }, [riskModules]);
+
+  const coverageData = useMemo(() => {
+    if (!riskModules?.length) return [];
+    return riskModules.slice(0, 4).map((m) => ({
+      category: m.module,
+      covered: m.coverage,
+      uncovered: 100 - m.coverage,
+    }));
+  }, [riskModules]);
+
+  const highCount = riskModules?.filter((m) => m.level === "High").length || 0;
+  const mediumCount = riskModules?.filter((m) => m.level === "Medium").length || 0;
+  const lowCount = riskModules?.filter((m) => m.level === "Low").length || 0;
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -131,16 +94,31 @@ export default function RiskAssessment() {
         </div>
 
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Shield className="h-6 w-6 text-primary-foreground" />
-            </div>
-            Risk Analysis Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Identify high-risk areas in your test coverage
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                <Shield className="h-6 w-6 text-primary-foreground" />
+              </div>
+              Risk Analysis Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Identify high-risk areas in your test coverage
+            </p>
+          </div>
+          {projects && projects.length > 0 && (
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Projects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-projects">All Projects</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Risk Overview Cards */}
@@ -150,15 +128,17 @@ export default function RiskAssessment() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">High Risk</p>
-                  <p className="text-3xl font-bold text-destructive">3</p>
+                  {isLoading ? <Skeleton className="h-9 w-8 mt-1" /> : (
+                    <p className="text-3xl font-bold text-destructive">{highCount}</p>
+                  )}
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
                   <AlertTriangle className="h-6 w-6 text-destructive" />
                 </div>
               </div>
-              <div className="mt-3 flex items-center text-sm text-destructive">
-                <TrendingUp className="mr-1 h-4 w-4" />
-                +1 from last week
+              <div className="mt-3 flex items-center text-sm text-muted-foreground">
+                <Shield className="mr-1 h-4 w-4" />
+                {highCount} module{highCount !== 1 ? "s" : ""} need attention
               </div>
             </CardContent>
           </Card>
@@ -168,15 +148,17 @@ export default function RiskAssessment() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Medium Risk</p>
-                  <p className="text-3xl font-bold text-chart-4">12</p>
+                  {isLoading ? <Skeleton className="h-9 w-8 mt-1" /> : (
+                    <p className="text-3xl font-bold text-chart-4">{mediumCount}</p>
+                  )}
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chart-4/10">
                   <Shield className="h-6 w-6 text-chart-4" />
                 </div>
               </div>
-              <div className="mt-3 flex items-center text-sm text-chart-1">
+              <div className="mt-3 flex items-center text-sm text-muted-foreground">
                 <TrendingDown className="mr-1 h-4 w-4" />
-                -2 from last week
+                Monitor these areas
               </div>
             </CardContent>
           </Card>
@@ -186,14 +168,16 @@ export default function RiskAssessment() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Low Risk</p>
-                  <p className="text-3xl font-bold text-chart-1">8</p>
+                  {isLoading ? <Skeleton className="h-9 w-8 mt-1" /> : (
+                    <p className="text-3xl font-bold text-chart-1">{lowCount}</p>
+                  )}
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chart-1/10">
                   <Shield className="h-6 w-6 text-chart-1" />
                 </div>
               </div>
               <div className="mt-3 flex items-center text-sm text-muted-foreground">
-                No change from last week
+                Well covered areas
               </div>
             </CardContent>
           </Card>
@@ -205,75 +189,88 @@ export default function RiskAssessment() {
           <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-foreground">Risk Distribution</CardTitle>
-              <CardDescription>Overview of test cases by risk level</CardDescription>
+              <CardDescription>Overview of modules by risk level</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="h-[200px] w-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={riskDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {riskDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-[200px]">
+                  <Skeleton className="h-40 w-40 rounded-full" />
                 </div>
-                <div className="space-y-3">
-                  {riskDistribution.map((item) => (
-                    <div key={item.name} className="flex items-center gap-3">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-sm text-muted-foreground">{item.name}:</span>
-                      <span className="font-semibold text-foreground">{item.value}</span>
-                    </div>
-                  ))}
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="h-[200px] w-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={riskDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {riskDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-3">
+                    {riskDistribution.map((item) => (
+                      <div key={item.name} className="flex items-center gap-3">
+                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-sm text-muted-foreground">{item.name}:</span>
+                        <span className="font-semibold text-foreground">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Risk Coverage */}
           <Card className="border-border">
             <CardHeader>
-              <CardTitle className="text-foreground">Risk Coverage by Category</CardTitle>
-              <CardDescription>Test coverage across different test types</CardDescription>
+              <CardTitle className="text-foreground">Risk Coverage by Module</CardTitle>
+              <CardDescription>Test coverage across different modules</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={riskCoverageData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis type="number" domain={[0, 100]} />
-                    <YAxis
-                      dataKey="category"
-                      type="category"
-                      width={80}
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Bar dataKey="covered" stackId="a" fill="hsl(var(--chart-1))" />
-                    <Bar dataKey="uncovered" stackId="a" fill="hsl(var(--muted))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {isLoading ? (
+                <div className="h-[200px] flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              ) : coverageData.length === 0 ? (
+                <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
+                  No data available
+                </div>
+              ) : (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={coverageData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" domain={[0, 100]} />
+                      <YAxis
+                        dataKey="category"
+                        type="category"
+                        width={100}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Bar dataKey="covered" stackId="a" fill="hsl(var(--chart-1))" />
+                      <Bar dataKey="uncovered" stackId="a" fill="hsl(var(--muted))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -282,18 +279,14 @@ export default function RiskAssessment() {
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="text-foreground">Risk Factors</CardTitle>
-            <CardDescription>
-              Configure risk calculation parameters
-            </CardDescription>
+            <CardDescription>Configure risk calculation parameters</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-3">
                 <Label>Test Type Weight</Label>
                 <Select defaultValue="medium">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -304,9 +297,7 @@ export default function RiskAssessment() {
               <div className="space-y-3">
                 <Label>Automation Status Weight</Label>
                 <Select defaultValue="medium">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -322,66 +313,60 @@ export default function RiskAssessment() {
             <div className="mt-4 flex items-start gap-2 rounded-md bg-accent p-3">
               <Info className="h-4 w-4 text-accent-foreground mt-0.5" />
               <p className="text-sm text-accent-foreground">
-                Risk scores are calculated based on multiple factors weighted according to
-                their impact on testing effectiveness and project stability.
+                Risk scores are calculated based on test coverage, execution results, and defect density for each module.
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Test Case Risk Analysis */}
+        {/* Module Risk Analysis Table */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-foreground">Risk Assessment by Test Case</CardTitle>
-            <CardDescription>
-              Analyze risk levels for individual test cases
-            </CardDescription>
+            <CardTitle className="text-foreground">Risk Assessment by Module</CardTitle>
+            <CardDescription>Analyze risk levels for application modules</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Test Case</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Complexity</TableHead>
-                  <TableHead>Risk Level</TableHead>
-                  <TableHead className="text-right">Risk Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {testCaseRisks.map((testCase, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium text-foreground">
-                      {testCase.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{testCase.type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {testCase.complexity}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(riskLevelColors[testCase.riskLevel])}
-                      >
-                        {testCase.riskLevel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Progress
-                          value={testCase.riskScore}
-                          className="w-24 h-2"
-                        />
-                        <span className="text-sm font-medium text-foreground w-10">
-                          {testCase.riskScore}%
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : !riskModules?.length ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                No risk data available. Create test cases and run executions to generate risk scores.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Module</TableHead>
+                    <TableHead>Tests</TableHead>
+                    <TableHead>Coverage</TableHead>
+                    <TableHead>Risk Level</TableHead>
+                    <TableHead className="text-right">Risk Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {riskModules.map((module, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium text-foreground">{module.module}</TableCell>
+                      <TableCell className="text-muted-foreground">{module.tests}</TableCell>
+                      <TableCell className="text-muted-foreground">{module.coverage}%</TableCell>
+                      <TableCell>
+                        <Badge className={cn(riskLevelColors[module.level])}>{module.level}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Progress value={module.score} className="w-24 h-2" />
+                          <span className="text-sm font-medium text-foreground w-10">{module.score}%</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

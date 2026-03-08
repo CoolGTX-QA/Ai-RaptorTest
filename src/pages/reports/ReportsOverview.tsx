@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Play,
   Activity,
@@ -12,59 +13,64 @@ import {
   ArrowRight,
   BarChart3,
 } from "lucide-react";
-
-const reportModules = [
-  {
-    title: "Test Execution Report",
-    description: "Run details, pass rates, and execution trends by sprint",
-    icon: Play,
-    href: "/reports/test-execution",
-    color: "text-chart-1",
-    stats: { label: "Pass Rate", value: "89.1%" },
-  },
-  {
-    title: "Test Analytics Report",
-    description: "Type distribution, quality radar, and efficiency trends",
-    icon: Activity,
-    href: "/reports/test-analytics",
-    color: "text-chart-2",
-    stats: { label: "Coverage", value: "82%" },
-  },
-  {
-    title: "Defect Leakage Report",
-    description: "Leakage by phase, severity breakdown, and trend analysis",
-    icon: Bug,
-    href: "/reports/defect-leakage",
-    color: "text-destructive",
-    stats: { label: "Leakage Rate", value: "6%" },
-  },
-  {
-    title: "RCA Report",
-    description: "Root cause categories, preventive actions, and implementation tracking",
-    icon: Search,
-    href: "/reports/rca",
-    color: "text-chart-4",
-    stats: { label: "Implemented", value: "50%" },
-  },
-  {
-    title: "Requirement Traceability",
-    description: "Coverage matrix linking requirements to test cases",
-    icon: Target,
-    href: "/reports/traceability",
-    color: "text-chart-3",
-    stats: { label: "Linked", value: "129" },
-  },
-  {
-    title: "Advanced Reports",
-    description: "Test effort analysis, defect density, and test cycle summary",
-    icon: Zap,
-    href: "/reports/advanced",
-    color: "text-primary",
-    stats: { label: "Modules", value: "3" },
-  },
-];
+import { useExecutionReport, useDefectLeakageReport, useAnalyticsReport } from "@/hooks/useReportData";
 
 export default function ReportsOverview() {
+  const { data: execData, isLoading: loadingExec } = useExecutionReport();
+  const { data: defectData, isLoading: loadingDefects } = useDefectLeakageReport();
+  const { data: analyticsData, isLoading: loadingAnalytics } = useAnalyticsReport();
+
+  const reportModules = [
+    {
+      title: "Test Execution Report",
+      description: "Run details, pass rates, and execution trends by sprint",
+      icon: Play,
+      href: "/reports/test-execution",
+      color: "text-chart-1",
+      stats: { label: "Pass Rate", value: loadingExec ? null : `${execData?.stats.passRate || 0}%` },
+    },
+    {
+      title: "Test Analytics Report",
+      description: "Type distribution, quality radar, and efficiency trends",
+      icon: Activity,
+      href: "/reports/test-analytics",
+      color: "text-chart-2",
+      stats: { label: "Coverage", value: loadingAnalytics ? null : `${analyticsData?.stats.testCoverage || 0}%` },
+    },
+    {
+      title: "Defect Leakage Report",
+      description: "Leakage by phase, severity breakdown, and trend analysis",
+      icon: Bug,
+      href: "/reports/defect-leakage",
+      color: "text-destructive",
+      stats: { label: "Leakage Rate", value: loadingDefects ? null : defectData?.stats.leakageRate || "0%" },
+    },
+    {
+      title: "RCA Report",
+      description: "Root cause categories, preventive actions, and implementation tracking",
+      icon: Search,
+      href: "/reports/rca",
+      color: "text-chart-4",
+      stats: { label: "Total Defects", value: loadingDefects ? null : `${defectData?.stats.totalDefects || 0}` },
+    },
+    {
+      title: "Requirement Traceability",
+      description: "Coverage matrix linking requirements to test cases",
+      icon: Target,
+      href: "/reports/traceability",
+      color: "text-chart-3",
+      stats: { label: "Executed", value: loadingExec ? null : `${execData?.stats.totalExecuted || 0}` },
+    },
+    {
+      title: "Advanced Reports",
+      description: "Test effort analysis, defect density, and test cycle summary",
+      icon: Zap,
+      href: "/reports/advanced",
+      color: "text-primary",
+      stats: { label: "Modules", value: "3" },
+    },
+  ];
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -93,7 +99,11 @@ export default function ReportsOverview() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">{module.stats.label}</p>
-                    <p className="text-lg font-bold text-foreground">{module.stats.value}</p>
+                    {module.stats.value === null ? (
+                      <Skeleton className="h-7 w-12 ml-auto" />
+                    ) : (
+                      <p className="text-lg font-bold text-foreground">{module.stats.value}</p>
+                    )}
                   </div>
                 </div>
                 <CardTitle className="text-foreground">{module.title}</CardTitle>
