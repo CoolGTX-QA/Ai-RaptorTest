@@ -662,12 +662,8 @@ export default function ProjectSettings() {
         </div>
 
         {/* Tabs Navigation */}
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">General</span>
-            </TabsTrigger>
+        <Tabs defaultValue="test-cases" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="test-cases" className="flex items-center gap-2">
               <TestTube className="h-4 w-4" />
               <span className="hidden sm:inline">Test Cases</span>
@@ -689,85 +685,6 @@ export default function ProjectSettings() {
               <span className="hidden sm:inline">Automation</span>
             </TabsTrigger>
           </TabsList>
-
-          {/* General Tab */}
-          <TabsContent value="general" className="space-y-6">
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Settings className="h-5 w-5 text-primary" />
-                  Project Information
-                </CardTitle>
-                <CardDescription>View and manage basic project details.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Project Name</Label>
-                    <p className="text-foreground font-medium">{project.name}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Workspace</Label>
-                    <p className="text-foreground font-medium">{workspaceId ? "Linked" : "—"}</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Project ID</Label>
-                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono text-foreground block w-fit">{project.id}</code>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Globe className="h-5 w-5 text-primary" />
-                    Test Environments
-                  </CardTitle>
-                  <CardDescription>Quick overview of configured environments.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {environments.map((env) => (
-                      <div key={env.id} className="flex items-center justify-between p-2 rounded border border-border">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">{env.name}</span>
-                          {env.isDefault && <Badge variant="secondary" className="text-[10px]">Default</Badge>}
-                        </div>
-                        {env.url && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{env.url}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Clock className="h-5 w-5 text-primary" />
-                    SLA Overview
-                  </CardTitle>
-                  <CardDescription>Current SLA targets for defect resolution.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {[
-                      { label: "Critical", hours: slaSettings.criticalDefectSLA },
-                      { label: "Major", hours: slaSettings.majorDefectSLA },
-                      { label: "Minor", hours: slaSettings.minorDefectSLA },
-                      { label: "Trivial", hours: slaSettings.trivialDefectSLA },
-                    ].map((sla) => (
-                      <div key={sla.label} className="flex items-center justify-between p-2 rounded border border-border">
-                        <span className="text-sm font-medium text-foreground">{sla.label}</span>
-                        <Badge variant="outline">{sla.hours}h</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           {/* Test Cases Tab */}
           <TabsContent value="test-cases" className="space-y-6">

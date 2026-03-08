@@ -17,9 +17,6 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RoleBadge } from "@/components/RoleBadge";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
-import { HealthProgressBar } from "@/components/HealthProgressBar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppRole } from "@/hooks/useRBAC";
 import { logActivityDirect } from "@/hooks/useActivityLog";
 import {
@@ -63,13 +60,6 @@ import {
   TestTube2,
   Settings,
   UserCog,
-  Activity,
-  Bug,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  BarChart3,
-  TrendingUp,
 } from "lucide-react";
 
 interface Workspace {
@@ -88,22 +78,6 @@ interface Project {
   status: string;
   created_at: string;
   created_by: string;
-}
-
-interface WorkspaceDashboardStats {
-  totalTestCases: number;
-  totalDefects: number;
-  totalTestRuns: number;
-  passRate: number;
-  openDefects: number;
-  recentActivities: Array<{
-    id: string;
-    action_type: string;
-    entity_type: string;
-    entity_name: string | null;
-    created_at: string;
-  }>;
-  projectHealthMap: Record<string, { passed: number; total: number }>;
 }
 
 export default function WorkspaceDetail() {
@@ -127,15 +101,6 @@ export default function WorkspaceDetail() {
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [projectForMembers, setProjectForMembers] = useState<Project | null>(null);
-  const [dashboardStats, setDashboardStats] = useState<WorkspaceDashboardStats>({
-    totalTestCases: 0,
-    totalDefects: 0,
-    totalTestRuns: 0,
-    passRate: 0,
-    openDefects: 0,
-    recentActivities: [],
-    projectHealthMap: {},
-  });
 
   useEffect(() => {
     if (workspaceId && user) {
@@ -187,51 +152,6 @@ export default function WorkspaceDetail() {
         .not("accepted_at", "is", null);
 
       setMemberCount(count || 0);
-
-      // Fetch dashboard stats
-      if (projectsData && projectsData.length > 0) {
-        const pIds = projectsData.map(p => p.id);
-        
-        const [tcRes, defRes, trRes, openDefRes, actRes] = await Promise.all([
-          supabase.from("test_cases").select("id", { count: "exact", head: true }).in("project_id", pIds),
-          supabase.from("defects").select("id", { count: "exact", head: true }).in("project_id", pIds),
-          supabase.from("test_runs").select("id", { count: "exact", head: true }).in("project_id", pIds),
-          supabase.from("defects").select("id", { count: "exact", head: true }).in("project_id", pIds).eq("status", "open"),
-          supabase.from("activity_logs").select("id, action_type, entity_type, entity_name, created_at")
-            .eq("workspace_id", workspaceId)
-            .order("created_at", { ascending: false })
-            .limit(10),
-        ]);
-
-        // Fetch execution stats for pass rate
-        const { data: runIds } = await supabase.from("test_runs").select("id").in("project_id", pIds);
-        let passRate = 0;
-        const projectHealthMap: Record<string, { passed: number; total: number }> = {};
-
-        if (runIds && runIds.length > 0) {
-          const rIds = runIds.map(r => r.id);
-          const { data: executions } = await supabase
-            .from("test_executions")
-            .select("status, test_run_id")
-            .in("test_run_id", rIds)
-            .neq("status", "not_run");
-
-          if (executions && executions.length > 0) {
-            const passed = executions.filter(e => e.status === "passed").length;
-            passRate = Math.round((passed / executions.length) * 100);
-          }
-        }
-
-        setDashboardStats({
-          totalTestCases: tcRes.count || 0,
-          totalDefects: defRes.count || 0,
-          totalTestRuns: trRes.count || 0,
-          passRate,
-          openDefects: openDefRes.count || 0,
-          recentActivities: actRes.data || [],
-          projectHealthMap,
-        });
-      }
     } catch (error: any) {
       console.error("Error fetching workspace data:", error);
       toast({
@@ -499,28 +419,7 @@ export default function WorkspaceDetail() {
           </div>
         </div>
 
-        {/* Dashboard Stats */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-          {[
-            { label: "Projects", value: projects.length, icon: FolderKanban, color: "text-blue-500" },
-            { label: "Test Cases", value: dashboardStats.totalTestCases, icon: TestTube2, color: "text-purple-500" },
-            { label: "Test Runs", value: dashboardStats.totalTestRuns, icon: BarChart3, color: "text-cyan-500" },
-            { label: "Pass Rate", value: `${dashboardStats.passRate}%`, icon: TrendingUp, color: dashboardStats.passRate >= 70 ? "text-green-500" : dashboardStats.passRate >= 40 ? "text-yellow-500" : "text-destructive" },
-            { label: "Open Defects", value: dashboardStats.openDefects, icon: Bug, color: "text-orange-500" },
-          ].map((stat) => (
-            <Card key={stat.label} className="border-border">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted">
-                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Projects Grid */}
         <div>
           <h2 className="text-xl font-semibold mb-4 text-foreground">Projects</h2>
           {projects.length === 0 ? (
@@ -654,50 +553,7 @@ export default function WorkspaceDetail() {
           )}
         </div>
 
-        {/* Recent Activity Feed */}
-        {dashboardStats.recentActivities.length > 0 && (
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Activity className="h-5 w-5 text-primary" />
-                Recent Activity
-              </CardTitle>
-              <CardDescription>Latest actions across all projects in this workspace</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[200px]">
-                <div className="space-y-3">
-                  {dashboardStats.recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                      <div className="p-1.5 rounded-full bg-muted shrink-0">
-                        {activity.action_type === "create" && <Plus className="h-3 w-3 text-green-500" />}
-                        {activity.action_type === "update" && <Edit className="h-3 w-3 text-blue-500" />}
-                        {activity.action_type === "delete" && <Trash2 className="h-3 w-3 text-destructive" />}
-                        {activity.action_type === "execute" && <CheckCircle2 className="h-3 w-3 text-purple-500" />}
-                        {!["create", "update", "delete", "execute"].includes(activity.action_type) && <Activity className="h-3 w-3 text-muted-foreground" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">
-                          <span className="capitalize font-medium">{activity.action_type}</span>
-                          {" "}
-                          <span className="text-muted-foreground">{activity.entity_type}</span>
-                          {activity.entity_name && (
-                            <span className="font-medium"> "{activity.entity_name}"</span>
-                          )}
-                        </p>
-                      </div>
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {new Date(activity.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
-
-
+        {/* Delete Project Confirmation Dialog */}
         <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}

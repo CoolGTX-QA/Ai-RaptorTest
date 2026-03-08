@@ -6,14 +6,9 @@ import { useRBAC } from "@/hooks/useRBAC";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ImageUpload } from "@/components/ImageUpload";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -22,7 +17,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Loader2,
@@ -32,12 +26,6 @@ import {
   Save,
   ExternalLink,
   AlertTriangle,
-  Building2,
-  Trash2,
-  Shield,
-  Users,
-  FolderKanban,
-  Activity,
 } from "lucide-react";
 import { IntegrationConfigDialog } from "@/components/workspace/IntegrationConfigDialog";
 import { ToolsFeatureSection } from "@/components/workspace/ToolsFeatureSection";
@@ -74,16 +62,6 @@ interface WorkspaceSettingsData {
 interface Workspace {
   id: string;
   name: string;
-  description: string | null;
-  icon_url: string | null;
-  created_by: string;
-}
-
-interface WorkspaceStats {
-  projectCount: number;
-  memberCount: number;
-  testCaseCount: number;
-  defectCount: number;
 }
 
 const defaultSettings: WorkspaceSettingsData["enabled_tools"] = {
@@ -119,18 +97,6 @@ export default function WorkspaceSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [stats, setStats] = useState<WorkspaceStats>({ projectCount: 0, memberCount: 0, testCaseCount: 0, defectCount: 0 });
-
-  // General settings state
-  const [workspaceName, setWorkspaceName] = useState("");
-  const [workspaceDescription, setWorkspaceDescription] = useState("");
-  const [workspaceIcon, setWorkspaceIcon] = useState<string | null>(null);
-  const [savingGeneral, setSavingGeneral] = useState(false);
-
-  // Delete workspace state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // Local state for form
   const [enabledTools, setEnabledTools] = useState(defaultSettings);
@@ -156,7 +122,7 @@ export default function WorkspaceSettings() {
       // Fetch workspace details
       const { data: workspaceData, error: workspaceError } = await supabase
         .from("workspaces")
-        .select("id, name, description, icon_url, created_by")
+        .select("id, name")
         .eq("id", workspaceId)
         .maybeSingle();
 
@@ -173,36 +139,6 @@ export default function WorkspaceSettings() {
       }
 
       setWorkspace(workspaceData);
-      setWorkspaceName(workspaceData.name);
-      setWorkspaceDescription(workspaceData.description || "");
-      setWorkspaceIcon(workspaceData.icon_url);
-
-      // Fetch stats in parallel
-      const [projectsRes, membersRes] = await Promise.all([
-        supabase.from("projects").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-        supabase.from("workspace_members").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId).not("accepted_at", "is", null),
-      ]);
-
-      // Get test cases and defects count across projects
-      const { data: projectIds } = await supabase.from("projects").select("id").eq("workspace_id", workspaceId);
-      let testCaseCount = 0;
-      let defectCount = 0;
-      if (projectIds && projectIds.length > 0) {
-        const pIds = projectIds.map(p => p.id);
-        const [tcRes, defRes] = await Promise.all([
-          supabase.from("test_cases").select("id", { count: "exact", head: true }).in("project_id", pIds),
-          supabase.from("defects").select("id", { count: "exact", head: true }).in("project_id", pIds),
-        ]);
-        testCaseCount = tcRes.count || 0;
-        defectCount = defRes.count || 0;
-      }
-
-      setStats({
-        projectCount: projectsRes.count || 0,
-        memberCount: membersRes.count || 0,
-        testCaseCount,
-        defectCount,
-      });
 
       // Fetch workspace settings
       const { data: settingsData, error: settingsError } = await supabase
@@ -219,6 +155,7 @@ export default function WorkspaceSettings() {
         const tools = settingsData.enabled_tools as Record<string, boolean> | null;
         const integrations = settingsData.enabled_integrations as Record<string, boolean> | null;
         
+        // Fetch integration configs from workspace_integrations table
         const { data: integrationsData } = await supabase
           .from("workspace_integrations")
           .select("integration_type, config, is_active")
@@ -271,6 +208,7 @@ export default function WorkspaceSettings() {
         });
         setIntegrationConfigs(configs);
       } else {
+        // No settings exist yet, use defaults
         setEnabledTools(defaultSettings);
         setEnabledIntegrations(defaultIntegrations);
         setIntegrationConfigs(defaultIntegrationConfigs);
@@ -287,58 +225,31 @@ export default function WorkspaceSettings() {
     }
   };
 
-  const handleSaveGeneral = async () => {
-    if (!workspaceId || !user) return;
-    setSavingGeneral(true);
-    try {
-      const { error } = await supabase
-        .from("workspaces")
-        .update({
-          name: workspaceName.trim(),
-          description: workspaceDescription.trim() || null,
-          icon_url: workspaceIcon,
-        })
-        .eq("id", workspaceId);
-
-      if (error) throw error;
-      toast({ title: "Workspace updated", description: "General settings saved successfully." });
-      setWorkspace(prev => prev ? { ...prev, name: workspaceName.trim(), description: workspaceDescription.trim() || null, icon_url: workspaceIcon } : null);
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to save.", variant: "destructive" });
-    } finally {
-      setSavingGeneral(false);
-    }
-  };
-
-  const handleDeleteWorkspace = async () => {
-    if (!workspaceId || !user || deleteConfirmText !== workspace?.name) return;
-    setDeleting(true);
-    try {
-      const { error } = await supabase.from("workspaces").delete().eq("id", workspaceId);
-      if (error) throw error;
-      toast({ title: "Workspace deleted", description: "The workspace has been permanently deleted." });
-      navigate("/workspaces");
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to delete workspace.", variant: "destructive" });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   const handleToolToggle = (tool: keyof typeof enabledTools) => {
-    setEnabledTools((prev) => ({ ...prev, [tool]: !prev[tool] }));
+    setEnabledTools((prev) => ({
+      ...prev,
+      [tool]: !prev[tool],
+    }));
     setHasChanges(true);
   };
 
   const handleSubToolToggle = (subToolId: string) => {
-    setSubToolSettings((prev) => ({ ...prev, [subToolId]: !(prev[subToolId] ?? true) }));
+    setSubToolSettings((prev) => ({
+      ...prev,
+      [subToolId]: !(prev[subToolId] ?? true),
+    }));
     setHasChanges(true);
   };
 
   const handleIntegrationToggle = (integration: keyof typeof enabledIntegrations) => {
     const newValue = !enabledIntegrations[integration];
-    setEnabledIntegrations((prev) => ({ ...prev, [integration]: newValue }));
+    setEnabledIntegrations((prev) => ({
+      ...prev,
+      [integration]: newValue,
+    }));
     setHasChanges(true);
+    
+    // If enabling, open config dialog
     if (newValue) {
       setActiveIntegration(integration);
       setConfigDialogOpen(true);
@@ -352,51 +263,109 @@ export default function WorkspaceSettings() {
 
   const handleSaveIntegrationConfig = async (config: IntegrationConfig) => {
     if (!workspaceId || !user || !activeIntegration) return;
+    
     try {
+      // Extract API key from config - different integrations use different key names
       const apiKey = config.api_key || config.api_token;
+      
       if (!apiKey) {
-        toast({ title: "Error", description: "API key is required.", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "API key is required for this integration.",
+          variant: "destructive",
+        });
         return;
       }
+
+      // Create safe config without sensitive keys for display purposes
       const safeConfig: IntegrationConfig = {};
       for (const [key, value] of Object.entries(config)) {
-        if (key !== 'api_key' && key !== 'api_token') safeConfig[key] = value;
+        if (key !== 'api_key' && key !== 'api_token') {
+          safeConfig[key] = value;
+        }
       }
+
+      // Use edge function to securely store the API key
       const { data, error } = await supabase.functions.invoke('manage-integration-keys', {
-        body: { action: 'store', api_key: apiKey, workspace_id: workspaceId, integration_type: activeIntegration, config: safeConfig },
+        body: {
+          action: 'store',
+          api_key: apiKey,
+          workspace_id: workspaceId,
+          integration_type: activeIntegration,
+          config: safeConfig,
+        },
       });
-      if (error) throw new Error(error.message || "Failed to store API key securely");
-      if (!data?.success) throw new Error(data?.error || "Failed to configure integration");
-      setIntegrationConfigs((prev) => ({ ...prev, [activeIntegration]: safeConfig }));
-      toast({ title: "Integration configured securely", description: `${activeIntegration.charAt(0).toUpperCase() + activeIntegration.slice(1)} has been configured.` });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to store API key securely");
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || "Failed to configure integration");
+      }
+
+      // Update local state with safe config only (no API keys)
+      setIntegrationConfigs((prev) => ({
+        ...prev,
+        [activeIntegration]: safeConfig,
+      }));
+
+      toast({
+        title: "Integration configured securely",
+        description: `${activeIntegration.charAt(0).toUpperCase() + activeIntegration.slice(1)} has been configured. API key is stored securely.`,
+      });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to save integration configuration.", variant: "destructive" });
+      console.error("Error saving integration config:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save integration configuration.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSave = async () => {
     if (!workspaceId || !user) return;
+
     setSaving(true);
     try {
       if (settings) {
+        // Update existing settings
         const { error } = await supabase
           .from("workspace_settings")
-          .update({ enabled_tools: enabledTools, enabled_integrations: enabledIntegrations })
+          .update({
+            enabled_tools: enabledTools,
+            enabled_integrations: enabledIntegrations,
+          })
           .eq("id", settings.id);
+
         if (error) throw error;
       } else {
+        // Create new settings
         const { error } = await supabase.from("workspace_settings").insert({
           workspace_id: workspaceId,
           enabled_tools: enabledTools,
           enabled_integrations: enabledIntegrations,
         });
+
         if (error) throw error;
       }
-      toast({ title: "Settings saved", description: "Workspace settings have been updated successfully." });
+
+      toast({
+        title: "Settings saved",
+        description: "Workspace settings have been updated successfully.",
+      });
+
       setHasChanges(false);
-      fetchData();
+      fetchData(); // Refresh to get the latest data
     } catch (error: any) {
-      toast({ title: "Error", description: "Failed to save workspace settings.", variant: "destructive" });
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save workspace settings. You may not have permission.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -423,7 +392,6 @@ export default function WorkspaceSettings() {
   }
 
   const canManageSettings = hasMinRole("manager");
-  const isAdmin = hasMinRole("admin");
 
   if (!canManageSettings) {
     return (
@@ -449,7 +417,11 @@ export default function WorkspaceSettings() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(`/workspaces/${workspaceId}`)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/workspaces/${workspaceId}`)}
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-3">
@@ -464,374 +436,191 @@ export default function WorkspaceSettings() {
               </div>
             </div>
           </div>
+          <Button onClick={handleSave} disabled={saving || !hasChanges}>
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
+          </Button>
         </div>
 
-        {/* Overview Stats */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {[
-            { label: "Projects", value: stats.projectCount, icon: FolderKanban, color: "text-blue-500" },
-            { label: "Members", value: stats.memberCount, icon: Users, color: "text-green-500" },
-            { label: "Test Cases", value: stats.testCaseCount, icon: Activity, color: "text-purple-500" },
-            { label: "Defects", value: stats.defectCount, icon: AlertTriangle, color: "text-orange-500" },
-          ].map((stat) => (
-            <Card key={stat.label} className="border-border">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted">
-                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Tools Section */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Tools & Features
+            </CardTitle>
+            <CardDescription>
+              Control which tools and features are available to workspace members.
+              Expand each category to configure individual sub-tools.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ToolsFeatureSection
+              enabledTools={enabledTools}
+              subToolSettings={subToolSettings}
+              onToolToggle={handleToolToggle}
+              onSubToolToggle={handleSubToolToggle}
+            />
+          </CardContent>
+        </Card>
 
-        {/* Tabbed Settings */}
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              General
-            </TabsTrigger>
-            <TabsTrigger value="tools" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Tools
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-2">
-              <Plug className="h-4 w-4" />
+        {/* Integrations Section */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Plug className="h-5 w-5 text-primary" />
               Integrations
-            </TabsTrigger>
-            <TabsTrigger value="danger" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Advanced
-            </TabsTrigger>
-          </TabsList>
-
-          {/* General Tab */}
-          <TabsContent value="general" className="space-y-6">
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Workspace Profile
-                </CardTitle>
-                <CardDescription>
-                  Manage your workspace name, description, and branding.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Workspace Icon</Label>
-                  <ImageUpload
-                    bucket="workspace-icons"
-                    currentImageUrl={workspaceIcon}
-                    onImageUploaded={(url) => setWorkspaceIcon(url)}
-                    onImageRemoved={() => setWorkspaceIcon(null)}
-                    folder={workspaceId || "default"}
-                    placeholder={workspace?.name?.substring(0, 2) || "WS"}
-                    shape="rounded"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ws-name">Workspace Name</Label>
-                  <Input
-                    id="ws-name"
-                    value={workspaceName}
-                    onChange={(e) => setWorkspaceName(e.target.value)}
-                    maxLength={100}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ws-desc">Description</Label>
-                  <Textarea
-                    id="ws-desc"
-                    value={workspaceDescription}
-                    onChange={(e) => setWorkspaceDescription(e.target.value)}
-                    placeholder="Describe the purpose of this workspace..."
-                    maxLength={1000}
-                    rows={3}
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveGeneral} disabled={savingGeneral || !workspaceName.trim()}>
-                    {savingGeneral ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save Profile
+            </CardTitle>
+            <CardDescription>
+              Enable integrations that can be connected at the project level. 
+              Individual projects can then configure their own connections.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Jira */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="jira" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M11.571 11.429L0 0h11.429a12 12 0 0 1 0 22.857l-.857-.857 1.285-1.286a9.43 9.43 0 0 0 0-13.285L11.571 11.429z" fill="#2684FF"/>
+                    <path d="M12.429 12.571L24 24H12.571a12 12 0 0 1 0-22.857l.857.857-1.285 1.286a9.43 9.43 0 0 0 0 13.285l.286.286z" fill="#2684FF"/>
+                  </svg>
+                  Jira
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Sync defects and requirements with Atlassian Jira
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.jira && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("jira")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Workspace Info */}
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="text-foreground">Workspace Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">Workspace ID</span>
-                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono text-foreground">{workspaceId}</code>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">Created</span>
-                  <span className="text-sm text-foreground">{workspace?.name ? "Active" : "-"}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">Total Projects</span>
-                  <Badge variant="secondary">{stats.projectCount}</Badge>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">Total Members</span>
-                  <Badge variant="secondary">{stats.memberCount}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Tools Tab */}
-          <TabsContent value="tools" className="space-y-6">
-            <Card className="border-border">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-foreground">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      Tools & Features
-                    </CardTitle>
-                    <CardDescription>
-                      Control which tools and features are available to workspace members.
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleSave} disabled={saving || !hasChanges}>
-                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save Changes
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ToolsFeatureSection
-                  enabledTools={enabledTools}
-                  subToolSettings={subToolSettings}
-                  onToolToggle={handleToolToggle}
-                  onSubToolToggle={handleSubToolToggle}
+                )}
+                <Switch
+                  id="jira"
+                  checked={enabledIntegrations.jira}
+                  onCheckedChange={() => handleIntegrationToggle("jira")}
                 />
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </div>
 
-          {/* Integrations Tab */}
-          <TabsContent value="integrations" className="space-y-6">
-            <Card className="border-border">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-foreground">
-                      <Plug className="h-5 w-5 text-primary" />
-                      Integrations
-                    </CardTitle>
-                    <CardDescription>
-                      Enable integrations that can be connected at the project level.
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleSave} disabled={saving || !hasChanges}>
-                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save Changes
+            <Separator />
+
+            {/* ClickUp */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="clickup" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M4.105 17.468l2.642-2.021a5.413 5.413 0 0 0 4.253 2.07 5.413 5.413 0 0 0 4.253-2.07l2.642 2.02C16.197 19.63 13.858 21 11 21c-2.858 0-5.197-1.37-6.895-3.532z" fill="#8930FD"/>
+                    <path d="M11 6.333l-5.294 4.32 2.103 2.575L11 10.772l3.191 2.456 2.103-2.574L11 6.333z" fill="#FF02F0"/>
+                    <path d="M11 3l7.895 6.445-2.103 2.574L11 7.563 5.208 12.02l-2.103-2.575L11 3z" fill="#FFD803"/>
+                  </svg>
+                  ClickUp
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Connect with ClickUp for task management
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.clickup && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("clickup")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
                   </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Jira */}
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="jira" className="text-base font-medium text-foreground flex items-center gap-2">
-                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                        <path d="M11.571 11.429L0 0h11.429a12 12 0 0 1 0 22.857l-.857-.857 1.285-1.286a9.43 9.43 0 0 0 0-13.285L11.571 11.429z" fill="#2684FF"/>
-                        <path d="M12.429 12.571L24 24H12.571a12 12 0 0 1 0-22.857l.857.857-1.285 1.286a9.43 9.43 0 0 0 0 13.285l.286.286z" fill="#2684FF"/>
-                      </svg>
-                      Jira
-                      {enabledIntegrations.jira && <Badge variant="default" className="text-[10px] h-5">Connected</Badge>}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">Sync defects and requirements with Atlassian Jira</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {enabledIntegrations.jira && (
-                      <Button variant="outline" size="sm" onClick={() => handleConfigureClick("jira")}>
-                        <ExternalLink className="h-4 w-4 mr-1" /> Configure
-                      </Button>
-                    )}
-                    <Switch id="jira" checked={enabledIntegrations.jira} onCheckedChange={() => handleIntegrationToggle("jira")} />
-                  </div>
-                </div>
+                )}
+                <Switch
+                  id="clickup"
+                  checked={enabledIntegrations.clickup}
+                  onCheckedChange={() => handleIntegrationToggle("clickup")}
+                />
+              </div>
+            </div>
 
-                {/* ClickUp */}
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="clickup" className="text-base font-medium text-foreground flex items-center gap-2">
-                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                        <path d="M4.105 17.468l2.642-2.021a5.413 5.413 0 0 0 4.253 2.07 5.413 5.413 0 0 0 4.253-2.07l2.642 2.02C16.197 19.63 13.858 21 11 21c-2.858 0-5.197-1.37-6.895-3.532z" fill="#8930FD"/>
-                        <path d="M11 6.333l-5.294 4.32 2.103 2.575L11 10.772l3.191 2.456 2.103-2.574L11 6.333z" fill="#FF02F0"/>
-                        <path d="M11 3l7.895 6.445-2.103 2.574L11 7.563 5.208 12.02l-2.103-2.575L11 3z" fill="#FFD803"/>
-                      </svg>
-                      ClickUp
-                      {enabledIntegrations.clickup && <Badge variant="default" className="text-[10px] h-5">Connected</Badge>}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">Connect with ClickUp for task management</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {enabledIntegrations.clickup && (
-                      <Button variant="outline" size="sm" onClick={() => handleConfigureClick("clickup")}>
-                        <ExternalLink className="h-4 w-4 mr-1" /> Configure
-                      </Button>
-                    )}
-                    <Switch id="clickup" checked={enabledIntegrations.clickup} onCheckedChange={() => handleIntegrationToggle("clickup")} />
-                  </div>
-                </div>
+            <Separator />
 
-                {/* Linear */}
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="linear" className="text-base font-medium text-foreground flex items-center gap-2">
-                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                        <path d="M3.185 12.808l8.007 8.007a9.082 9.082 0 0 1-8.007-8.007z" fill="#5E6AD2"/>
-                        <path d="M3 11.118a9.092 9.092 0 0 1 2.665-5.453 9.092 9.092 0 0 1 5.453-2.665l9.882 9.882a9.092 9.092 0 0 1-2.665 5.453 9.092 9.092 0 0 1-5.453 2.665L3 11.118z" fill="#5E6AD2"/>
-                        <path d="M12.808 3.185a9.082 9.082 0 0 1 8.007 8.007l-8.007-8.007z" fill="#5E6AD2"/>
-                      </svg>
-                      Linear
-                      {enabledIntegrations.linear && <Badge variant="default" className="text-[10px] h-5">Connected</Badge>}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">Integrate with Linear for issue tracking</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {enabledIntegrations.linear && (
-                      <Button variant="outline" size="sm" onClick={() => handleConfigureClick("linear")}>
-                        <ExternalLink className="h-4 w-4 mr-1" /> Configure
-                      </Button>
-                    )}
-                    <Switch id="linear" checked={enabledIntegrations.linear} onCheckedChange={() => handleIntegrationToggle("linear")} />
-                  </div>
-                </div>
-
-                {/* RaptorAssist */}
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/30 transition-colors">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="raptorassist" className="text-base font-medium text-foreground flex items-center gap-2">
-                      <div className="h-5 w-5 rounded bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                        <Sparkles className="h-3 w-3 text-primary-foreground" />
-                      </div>
-                      RaptorAssist
-                      {enabledIntegrations.raptorassist && <Badge variant="default" className="text-[10px] h-5">Connected</Badge>}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">Connect to RaptorAssist AI for enhanced testing</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {enabledIntegrations.raptorassist && (
-                      <Button variant="outline" size="sm" onClick={() => handleConfigureClick("raptorassist")}>
-                        <ExternalLink className="h-4 w-4 mr-1" /> Configure
-                      </Button>
-                    )}
-                    <Switch id="raptorassist" checked={enabledIntegrations.raptorassist} onCheckedChange={() => handleIntegrationToggle("raptorassist")} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Advanced / Danger Zone Tab */}
-          <TabsContent value="danger" className="space-y-6">
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="text-foreground">Access & Permissions</CardTitle>
-                <CardDescription>Manage workspace-level access controls.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium text-foreground">Member Management</p>
-                    <p className="text-sm text-muted-foreground">Add, remove, or update roles for workspace members.</p>
-                  </div>
-                  <Button variant="outline" onClick={() => navigate(`/workspaces/${workspaceId}/members`)}>
-                    <Users className="h-4 w-4 mr-2" /> Manage Members
+            {/* Linear */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="linear" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M3.185 12.808l8.007 8.007a9.082 9.082 0 0 1-8.007-8.007z" fill="#5E6AD2"/>
+                    <path d="M3 11.118a9.092 9.092 0 0 1 2.665-5.453 9.092 9.092 0 0 1 5.453-2.665l9.882 9.882a9.092 9.092 0 0 1-2.665 5.453 9.092 9.092 0 0 1-5.453 2.665L3 11.118z" fill="#5E6AD2"/>
+                    <path d="M12.808 3.185a9.082 9.082 0 0 1 8.007 8.007l-8.007-8.007z" fill="#5E6AD2"/>
+                  </svg>
+                  Linear
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Integrate with Linear for issue tracking
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.linear && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("linear")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
                   </Button>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium text-foreground">Workspace Activity</p>
-                    <p className="text-sm text-muted-foreground">View audit log of all workspace actions.</p>
+                )}
+                <Switch
+                  id="linear"
+                  checked={enabledIntegrations.linear}
+                  onCheckedChange={() => handleIntegrationToggle("linear")}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* RaptorAssist */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="raptorassist" className="text-base font-medium text-foreground flex items-center gap-2">
+                  <div className="h-5 w-5 rounded bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                    <Sparkles className="h-3 w-3 text-primary-foreground" />
                   </div>
-                  <Button variant="outline" onClick={() => navigate("/activity")}>
-                    <Activity className="h-4 w-4 mr-2" /> View Log
+                  RaptorAssist
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Connect to RaptorAssist AI for enhanced testing capabilities
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {enabledIntegrations.raptorassist && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleConfigureClick("raptorassist")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Configure
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {isAdmin && (
-              <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-destructive">
-                    <Trash2 className="h-5 w-5" />
-                    Danger Zone
-                  </CardTitle>
-                  <CardDescription>
-                    Irreversible actions. Deleting a workspace removes all projects, test cases, and data permanently.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/30 bg-destructive/5">
-                    <div>
-                      <p className="font-medium text-foreground">Delete this workspace</p>
-                      <p className="text-sm text-muted-foreground">
-                        Once deleted, all data is gone. This action cannot be undone.
-                      </p>
-                    </div>
-                    <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete Workspace
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Delete Confirmation */}
-            {deleteDialogOpen && (
-              <Card className="border-destructive">
-                <CardContent className="pt-6 space-y-4">
-                  <div className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="h-5 w-5" />
-                    <p className="font-semibold">Confirm Workspace Deletion</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Type <strong className="text-foreground">{workspace?.name}</strong> to confirm deletion:
-                  </p>
-                  <Input
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    placeholder="Type workspace name..."
-                    className="border-destructive/50"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setDeleteConfirmText(""); }}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      disabled={deleteConfirmText !== workspace?.name || deleting}
-                      onClick={handleDeleteWorkspace}
-                    >
-                      {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                      Permanently Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+                )}
+                <Switch
+                  id="raptorassist"
+                  checked={enabledIntegrations.raptorassist}
+                  onCheckedChange={() => handleIntegrationToggle("raptorassist")}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Integration Config Dialog */}
         <IntegrationConfigDialog
