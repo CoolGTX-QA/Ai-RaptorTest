@@ -65,13 +65,8 @@ export default function TMTSettings() {
 
   // Appearance settings
   const { theme, setTheme: setNextTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Language & Region
   const [language, setLanguage] = useState("en");
