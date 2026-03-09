@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -198,83 +197,73 @@ export default function AllProjects() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredProjects.map((project) => (
-              <div
+              <Card
                 key={project.id}
-                className="relative rounded-xl border border-primary/20 p-2 shadow-[0_0_15px_hsl(var(--primary)/0.1)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.25)] transition-shadow duration-300 cursor-pointer"
+                className="border-border hover:border-primary/50 transition-colors cursor-pointer group"
                 onClick={() => navigate(`/workspaces/${project.workspace_id}`)}
               >
-                <GlowingEffect
-                  spread={40}
-                  glow
-                  disabled={false}
-                  proximity={64}
-                  inactiveZone={0.01}
-                  borderWidth={2}
-                />
-                <Card className="relative border-0 shadow-none group">
-                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div className="flex items-start gap-3 flex-1">
-                      <Avatar className="h-10 w-10 rounded-lg">
-                        <AvatarImage src={project.logo_url || undefined} alt={project.name} />
-                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                          {project.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="space-y-1 flex-1">
-                        <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
-                          {project.name}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-1">
-                          <Layers className="h-3 w-3" />
-                          {project.workspace_name}
-                        </CardDescription>
-                      </div>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                  <div className="flex items-start gap-3 flex-1">
+                    <Avatar className="h-10 w-10 rounded-lg">
+                      <AvatarImage src={project.logo_url || undefined} alt={project.name} />
+                      <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                        {project.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1 flex-1">
+                      <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
+                        {project.name}
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-1">
+                        <Layers className="h-3 w-3" />
+                        {project.workspace_name}
+                      </CardDescription>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/test-repository?project=${project.id}`);
-                          }}
-                        >
-                          <TestTube2 className="mr-2 h-4 w-4" />
-                          View Test Cases
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/workspaces/${project.workspace_id}`);
-                          }}
-                        >
-                          <Layers className="mr-2 h-4 w-4" />
-                          View Workspace
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardHeader>
-                  <CardContent>
-                    {project.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {project.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <Badge
-                        variant={project.status === "active" ? "default" : "secondary"}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/test-repository?project=${project.id}`);
+                        }}
                       >
-                        {project.status}
-                      </Badge>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                        <TestTube2 className="mr-2 h-4 w-4" />
+                        View Test Cases
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/workspaces/${project.workspace_id}`);
+                        }}
+                      >
+                        <Layers className="mr-2 h-4 w-4" />
+                        View Workspace
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent>
+                  {project.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {project.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant={project.status === "active" ? "default" : "secondary"}
+                    >
+                      {project.status}
+                    </Badge>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

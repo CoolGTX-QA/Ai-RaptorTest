@@ -70,12 +70,14 @@ export default function DefectLeakageReport() {
                 value={stats.totalDefects}
                 description="Across all phases"
                 icon={Bug}
+                iconClassName="text-chart-1"
               />
               <StatCard
                 title="Leakage Rate"
                 value={stats.leakageRate}
                 description="Defects escaped to production"
                 icon={TrendingDown}
+                iconClassName="text-chart-1"
                 descriptionClassName="text-primary"
               />
               <StatCard
@@ -83,6 +85,7 @@ export default function DefectLeakageReport() {
                 value={stats.productionDefects}
                 description="Critical to fix"
                 icon={AlertTriangle}
+                iconClassName="text-destructive"
                 descriptionClassName="text-destructive"
               />
               <StatCard
@@ -90,6 +93,7 @@ export default function DefectLeakageReport() {
                 value={stats.containmentRate}
                 description="Excellent"
                 icon={Shield}
+                iconClassName="text-chart-1"
                 descriptionClassName="text-primary"
               />
             </>

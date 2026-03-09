@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useTheme } from "@/hooks/useThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -64,7 +63,7 @@ export default function TMTSettings() {
   const [weeklyDigest, setWeeklyDigest] = useState(false);
 
   // Appearance settings
-  const { theme, setTheme: setNextTheme, resolvedTheme } = useTheme();
+  const [theme, setTheme] = useState("system");
   const [compactMode, setCompactMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -334,8 +333,8 @@ export default function TMTSettings() {
                   <Label htmlFor="theme">Theme</Label>
                   <Select
                     value={theme}
-                    onValueChange={(v: "light" | "dark" | "system") => {
-                      setNextTheme(v);
+                    onValueChange={(v) => {
+                      setTheme(v);
                       markChanged();
                     }}
                   >
@@ -348,9 +347,6 @@ export default function TMTSettings() {
                       <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Currently using: {resolvedTheme} theme
-                  </p>
                 </div>
 
                 <Separator />

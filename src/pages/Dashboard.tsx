@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HealthProgressBar } from "@/components/HealthProgressBar";
-import { GlowingEffect } from "@/components/ui/glowing-effect";
 import {
   Layers,
   FolderKanban,
@@ -368,12 +367,12 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/workspaces")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Workspaces</CardTitle>
-              <Layers className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
+              <Layers className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -386,12 +385,12 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/projects")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
-              <FolderKanban className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
+              <FolderKanban className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -404,12 +403,12 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/test-repository")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Test Cases</CardTitle>
-              <TestTube2 className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
+              <TestTube2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -422,12 +421,12 @@ export default function Dashboard() {
           </Card>
 
           <Card 
-            className="border-border cursor-pointer hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group"
+            className="border-border cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => navigate("/test-execution")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Execution Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {loadingStats ? <Skeleton className="h-8 w-16" /> : (
@@ -618,96 +617,86 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Quick Links - Glowing Grid */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Quick Links</h2>
-          <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-4">
-            {quickLinks.map((link) => (
-              <li key={link.title} className="min-h-[8rem] list-none">
-                <div className="relative h-full rounded-xl border border-primary/20 p-2 shadow-[0_0_15px_hsl(var(--primary)/0.1)] hover:shadow-[0_0_25px_hsl(var(--primary)/0.25)] transition-shadow duration-300">
-                  <GlowingEffect
-                    spread={40}
-                    glow
-                    disabled={false}
-                    proximity={64}
-                    inactiveZone={0.01}
-                    borderWidth={2}
-                  />
-                  <Link
-                    to={link.href}
-                    className="relative flex h-full flex-col justify-between gap-4 overflow-hidden rounded-lg bg-card p-4 group"
-                  >
-                    <div className="relative flex flex-1 flex-col justify-between gap-3">
-                      <div className="w-fit rounded-lg border border-primary/30 bg-primary/5 p-2">
-                        <link.icon className="h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125" />
+        {/* Bottom Row */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Recent Activity */}
+          <Card className="lg:col-span-2 border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Recent Activity</CardTitle>
+              <CardDescription>Latest updates from your team</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingActivity ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-3">
+                      <Skeleton className="h-5 w-5 rounded-full" />
+                      <div className="flex-1 space-y-1">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/3" />
                       </div>
-                      <div className="space-y-1">
-                        <h3 className="text-sm font-semibold text-foreground">
-                          {link.title}
-                        </h3>
+                    </div>
+                  ))}
+                </div>
+              ) : recentActivity.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Clock className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm text-muted-foreground">No recent activity yet</p>
+                  <p className="text-xs text-muted-foreground">Activity will appear here as you work with test cases, runs, and defects.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-4 rounded-lg p-3 transition-colors hover:bg-accent"
+                    >
+                      <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          <span className="font-medium">"{activity.entityName}"</span>{" "}
+                          was {activity.actionType}d
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          {link.description}
+                          by {activity.userName || activity.userEmail} • {formatTimeAgo(activity.createdAt)}
                         </p>
                       </div>
+                      {activity.actionType === "delete" && (
+                        <Badge variant="destructive">Deleted</Badge>
+                      )}
                     </div>
-                  </Link>
+                  ))}
                 </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Recent Activity */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Recent Activity</CardTitle>
-            <CardDescription>Latest updates from your team</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingActivity ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 p-3">
-                    <Skeleton className="h-5 w-5 rounded-full" />
-                    <div className="flex-1 space-y-1">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-3 w-1/3" />
+          {/* Quick Links */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Quick Links</CardTitle>
+              <CardDescription>Navigate to key sections</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {quickLinks.map((link) => (
+                <Link
+                  key={link.title}
+                  to={link.href}
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-accent group"
+                >
+                  <div className="flex items-center gap-3">
+                    <link.icon className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{link.title}</p>
+                      <p className="text-xs text-muted-foreground">{link.description}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : recentActivity.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Clock className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">No recent activity yet</p>
-                <p className="text-xs text-muted-foreground">Activity will appear here as you work with test cases, runs, and defects.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-4 rounded-lg p-3 transition-colors hover:bg-accent"
-                  >
-                    <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">"{activity.entityName}"</span>{" "}
-                        was {activity.actionType}d
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        by {activity.userName || activity.userEmail} • {formatTimeAgo(activity.createdAt)}
-                      </p>
-                    </div>
-                    {activity.actionType === "delete" && (
-                      <Badge variant="destructive">Deleted</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );

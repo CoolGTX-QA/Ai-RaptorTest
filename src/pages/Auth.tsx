@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Layers, Users, BarChart3, Shield, Zap, Bug, FlaskConical, FolderTree, BrainCircuit, GitBranch, Clock } from "lucide-react";
-import RadialOrbitalTimeline, { type TimelineItem } from "@/components/ui/radial-orbital-timeline";
-import VaporizeTextCycle, { Tag } from "@/components/ui/vapour-text-effect";
+import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,44 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { z } from "zod";
 
 // Validation schemas
 const emailSchema = z.string().trim().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const fullNameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
-
-function TypewriterHeading() {
-  const text = "Modern Test Management Platform";
-  const [displayed, setDisplayed] = useState("");
-  const [cursorVisible, setCursorVisible] = useState(true);
-
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i <= text.length) {
-        setDisplayed(text.slice(0, i));
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 60);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const blink = setInterval(() => setCursorVisible((v) => !v), 530);
-    return () => clearInterval(blink);
-  }, []);
-
-  return (
-    <h2 className="text-3xl font-bold mb-4 text-primary-foreground drop-shadow-lg min-h-[2.5rem]">
-      {displayed}
-      <span className={`inline-block w-[3px] h-[1em] bg-primary-foreground ml-1 align-middle transition-opacity ${cursorVisible ? "opacity-100" : "opacity-0"}`} />
-    </h2>
-  );
-}
 
 export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -61,29 +27,12 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user } = useAuth();
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Redirect if already logged in
   if (user) {
     navigate("/dashboard", { replace: true });
     return null;
   }
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (error) {
-        toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
-      }
-    } catch (err: any) {
-      toast({ title: "Google sign-in failed", description: err.message || "An error occurred", variant: "destructive" });
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,33 +149,6 @@ export default function Auth() {
     }
   };
 
-  const featureTimelineData: TimelineItem[] = [
-    {
-      id: 1, title: "AI Generation", date: "Core", content: "Generate comprehensive test cases from requirements using AI models with smart prioritization.", category: "AI", icon: BrainCircuit, relatedIds: [2, 3], status: "completed", energy: 95,
-    },
-    {
-      id: 2, title: "Autonomous Testing", date: "Core", content: "Fully autonomous test execution with browser automation and intelligent error analysis.", category: "Automation", icon: Zap, relatedIds: [1, 3], status: "completed", energy: 90,
-    },
-    {
-      id: 3, title: "Test Repository", date: "Core", content: "Hierarchical folder-based test case management with versioning and review workflows.", category: "Repository", icon: FolderTree, relatedIds: [1, 4], status: "completed", energy: 100,
-    },
-    {
-      id: 4, title: "Test Execution", date: "Core", content: "Create test runs, assign to team members, and track execution status in real-time.", category: "Execution", icon: FlaskConical, relatedIds: [3, 5], status: "in-progress", energy: 85,
-    },
-    {
-      id: 5, title: "Defect Tracking", date: "Core", content: "Integrated defect management linked to test cases with severity and priority tracking.", category: "Defects", icon: Bug, relatedIds: [4, 6], status: "in-progress", energy: 80,
-    },
-    {
-      id: 6, title: "Reports & Analytics", date: "Core", content: "Advanced dashboards with execution reports, defect leakage, traceability matrices, and RCA.", category: "Reports", icon: BarChart3, relatedIds: [5, 7], status: "completed", energy: 88,
-    },
-    {
-      id: 7, title: "Risk Assessment", date: "Core", content: "AI-powered risk scoring, predictions, and mitigation tracking for proactive quality management.", category: "Risk", icon: Shield, relatedIds: [6, 8], status: "in-progress", energy: 70,
-    },
-    {
-      id: 8, title: "Team Workspaces", date: "Core", content: "Role-based workspaces with project management, member invitations, and granular permissions.", category: "Collaboration", icon: Users, relatedIds: [7, 1], status: "completed", energy: 92,
-    },
-  ];
-
   return (
     <div className="min-h-screen flex overflow-hidden">
       {/* Left Panel - Auth Form with Glossy Effect */}
@@ -279,27 +201,7 @@ export default function Auth() {
                 50% { background-position: -200% 0; }
               }
             `}</style>
-            <div className="w-full h-12">
-              <VaporizeTextCycle
-                texts={["Welcome to RaptorTest", "Modern Test Management", "AI-Powered Testing"]}
-                font={{
-                  fontFamily: "Work Sans, sans-serif",
-                  fontSize: "24px",
-                  fontWeight: 600,
-                }}
-                color="rgb(23, 23, 23)"
-                spread={4}
-                density={6}
-                animation={{
-                  vaporizeDuration: 1.5,
-                  fadeInDuration: 0.8,
-                  waitDuration: 2,
-                }}
-                direction="left-to-right"
-                alignment="center"
-                tag={Tag.H1}
-              />
-            </div>
+            <h1 className="text-2xl font-semibold text-foreground">Welcome to RaptorTest</h1>
             <p className="text-muted-foreground mt-2">
               Enter your credentials to access your account
             </p>
@@ -369,29 +271,6 @@ export default function Auth() {
                       Forgot password?
                     </Button>
                   </form>
-                  <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border/50" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card/80 px-2 text-muted-foreground">Or continue with</span>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-border/50 hover:bg-accent/50 transition-all duration-300"
-                    onClick={handleGoogleSignIn}
-                    disabled={googleLoading}
-                  >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    {googleLoading ? "Signing in..." : "Google"}
-                  </Button>
                 </TabsContent>
 
                 <TabsContent value="register" className="mt-6">
@@ -438,29 +317,6 @@ export default function Auth() {
                       {isLoading ? "Creating account..." : "Register"}
                     </Button>
                   </form>
-                  <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border/50" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card/80 px-2 text-muted-foreground">Or continue with</span>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-border/50 hover:bg-accent/50 transition-all duration-300"
-                    onClick={handleGoogleSignIn}
-                    disabled={googleLoading}
-                  >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    {googleLoading ? "Signing in..." : "Google"}
-                  </Button>
                 </TabsContent>
               </Tabs>
             </CardHeader>
@@ -530,43 +386,129 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Right Panel - Orbital Timeline */}
+      {/* Right Panel - Hero Section with TMT Visual */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden">
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/80" />
         
-        {/* Subtle floating orbs */}
+        {/* Animated floating orbs */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-primary-foreground/10 blur-3xl animate-pulse" />
-          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-primary-foreground/8 blur-3xl animate-pulse" />
+          {/* Large glowing orb - top left */}
+          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-gradient-to-br from-primary-foreground/20 to-transparent blur-3xl animate-pulse" />
+          
+          {/* Medium orb - bottom right */}
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-gradient-to-tl from-primary-foreground/15 to-transparent blur-3xl animate-pulse delay-1000" />
+          
+          {/* Small floating orbs with custom animation */}
+          <div className="absolute top-[15%] right-[10%] w-4 h-4 rounded-full bg-primary-foreground/40 shadow-lg shadow-primary-foreground/20" 
+               style={{ animation: 'float 6s ease-in-out infinite' }} />
+          <div className="absolute top-[25%] left-[8%] w-3 h-3 rounded-full bg-primary-foreground/30" 
+               style={{ animation: 'float 8s ease-in-out infinite 1s' }} />
+          <div className="absolute bottom-[30%] right-[15%] w-5 h-5 rounded-full bg-primary-foreground/35" 
+               style={{ animation: 'float 7s ease-in-out infinite 2s' }} />
+          <div className="absolute bottom-[20%] left-[12%] w-2 h-2 rounded-full bg-primary-foreground/45" 
+               style={{ animation: 'float 5s ease-in-out infinite 0.5s' }} />
+          <div className="absolute top-[60%] right-[8%] w-3 h-3 rounded-full bg-primary-foreground/25" 
+               style={{ animation: 'float 9s ease-in-out infinite 3s' }} />
+          
+          {/* Geometric accent lines */}
+          <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="white" stopOpacity="0" />
+                <stop offset="50%" stopColor="white" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="white" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <line x1="0" y1="30%" x2="40%" y2="0" stroke="url(#lineGrad)" strokeWidth="1" />
+            <line x1="60%" y1="100%" x2="100%" y2="70%" stroke="url(#lineGrad)" strokeWidth="1" />
+            <line x1="100%" y1="20%" x2="70%" y2="50%" stroke="url(#lineGrad)" strokeWidth="1" />
+          </svg>
+          
+          {/* Hexagon grid pattern - subtle */}
+          <div className="absolute top-10 right-10 opacity-10">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <polygon points="60,5 110,30 110,80 60,105 10,80 10,30" fill="none" stroke="white" strokeWidth="1" />
+              <polygon points="60,20 95,37 95,73 60,90 25,73 25,37" fill="none" stroke="white" strokeWidth="0.5" />
+            </svg>
+          </div>
+          <div className="absolute bottom-16 left-8 opacity-10">
+            <svg width="80" height="80" viewBox="0 0 120 120">
+              <polygon points="60,5 110,30 110,80 60,105 10,80 10,30" fill="none" stroke="white" strokeWidth="1" />
+            </svg>
+          </div>
         </div>
+        
+        <style>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-10px) translateX(-10px); }
+            75% { transform: translateY(-25px) translateX(5px); }
+          }
+        `}</style>
 
-        {/* Orbital Timeline */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <RadialOrbitalTimeline
-            timelineData={featureTimelineData}
-            centerContent={
-              <div className="flex flex-col items-center text-center pointer-events-none">
-                {/* Logo */}
-                <div className="relative mb-3">
-                  <div className="absolute -inset-3 bg-primary-foreground/15 rounded-full blur-xl" />
-                  <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-foreground/25 to-primary-foreground/10 border border-primary-foreground/30 backdrop-blur-sm shadow-xl overflow-hidden">
-                    <Layers className="h-9 w-9 text-primary-foreground drop-shadow-md relative z-10" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-foreground/30 via-primary-foreground/5 to-transparent pointer-events-none" />
+        {/* Glossy glass panel */}
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="relative max-w-lg">
+            {/* Glowing backdrop */}
+            <div className="absolute -inset-4 bg-primary-foreground/5 rounded-3xl blur-xl" />
+            
+            <div className="relative bg-primary-foreground/10 backdrop-blur-md rounded-2xl p-8 border border-primary-foreground/20 overflow-hidden">
+              {/* Animated glossy border shine */}
+              <div 
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 3s ease-in-out infinite',
+                  maskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  maskComposite: 'xor',
+                  WebkitMaskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  WebkitMaskComposite: 'xor',
+                  padding: '1px',
+                }}
+              />
+              <style>{`
+                @keyframes shimmer {
+                  0% { background-position: 200% 0; }
+                  100% { background-position: -200% 0; }
+                }
+              `}</style>
+              {/* Top glossy shine */}
+              <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary-foreground/40 to-transparent" />
+              
+              <h2 className="text-4xl font-bold mb-4 text-primary-foreground drop-shadow-lg">
+                Modern Test Management Platform
+              </h2>
+              <p className="text-lg text-primary-foreground/90 mb-8 leading-relaxed">
+                Streamline your testing process with our comprehensive test
+                management solution. Create, organize, and execute test cases with
+                ease.
+              </p>
+              
+              <div className="space-y-5">
+                <div className="flex items-center gap-4 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <CheckCircle className="h-6 w-6 text-primary-foreground" />
                   </div>
+                  <span className="text-lg text-primary-foreground font-medium">Intuitive test case management</span>
                 </div>
-                <span className="text-lg font-bold text-primary-foreground drop-shadow-md">RaptorTest</span>
-                <span className="text-[10px] text-primary-foreground/60 mt-0.5 tracking-wider uppercase">Click a feature to explore</span>
+                <div className="flex items-center gap-4 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Users className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <span className="text-lg text-primary-foreground font-medium">Collaborative workspace</span>
+                </div>
+                <div className="flex items-center gap-4 group">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <BarChart3 className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <span className="text-lg text-primary-foreground font-medium">Comprehensive reporting</span>
+                </div>
               </div>
-            }
-          />
-        </div>
-
-        {/* Bottom tagline */}
-        <div className="absolute bottom-8 left-0 right-0 text-center">
-          <p className="text-sm text-primary-foreground/60 font-medium">
-            End-to-end Quality Assurance Platform
-          </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

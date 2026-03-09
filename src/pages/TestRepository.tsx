@@ -513,7 +513,7 @@ export default function TestRepository() {
                             />
                           </TableCell>
                         )}
-                        <TableCell className="font-mono text-sm text-muted-foreground">{(tc as any).display_id || tc.id.slice(0, 8)}</TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">{tc.id.slice(0, 8)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 max-w-[250px]">
                             {tc.is_locked && <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" />}

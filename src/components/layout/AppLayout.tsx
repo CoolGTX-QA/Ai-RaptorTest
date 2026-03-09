@@ -17,8 +17,6 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationBell } from "@/components/NotificationBell";
-import { RoleBadge } from "@/components/RoleBadge";
-import type { AppRole } from "@/hooks/useRBAC";
 
 interface Profile {
   full_name: string | null;
@@ -34,10 +32,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [userRole, setUserRole] = useState<AppRole | null>(null);
 
   useEffect(() => {
     if (user) {
+      // Fetch profile from profiles table
       const fetchProfile = async () => {
         const { data } = await supabase
           .from("profiles")
@@ -48,6 +46,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         if (data) {
           setProfile(data);
         } else {
+          // Fallback to user metadata
           setProfile({
             full_name: user.user_metadata?.full_name || null,
             email: user.email || "",
@@ -55,24 +54,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           });
         }
       };
-
-      const fetchRole = async () => {
-        const { data } = await supabase
-          .from("workspace_members")
-          .select("role")
-          .eq("user_id", user.id)
-          .not("accepted_at", "is", null)
-          .order("invited_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (data?.role) {
-          setUserRole(data.role as AppRole);
-        }
-      };
-
       fetchProfile();
-      fetchRole();
     }
   }, [user]);
 
@@ -118,21 +100,18 @@ export function AppLayout({ children }: AppLayoutProps) {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium leading-none">{displayName}</p>
-                      {userRole && <RoleBadge role={userRole} size="sm" />}
-                    </div>
+                    <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {profile?.email || user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/tmt-settings")}>
+                <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/tmt-settings")}>
+                <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>

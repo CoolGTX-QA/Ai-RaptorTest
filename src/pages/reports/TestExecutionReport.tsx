@@ -84,6 +84,7 @@ export default function TestExecutionReport() {
                 value={`${stats.passRate}%`}
                 description="Overall pass rate"
                 icon={CheckCircle2}
+                iconClassName="text-chart-1"
                 descriptionClassName="text-primary"
               />
               <StatCard
@@ -91,6 +92,7 @@ export default function TestExecutionReport() {
                 value={stats.totalFailed}
                 description="Requires attention"
                 icon={XCircle}
+                iconClassName="text-destructive"
                 descriptionClassName="text-destructive"
               />
               <StatCard
@@ -98,6 +100,7 @@ export default function TestExecutionReport() {
                 value={testRuns.length > 0 ? testRuns[0].duration : "N/A"}
                 description="Latest run"
                 icon={Clock}
+                descriptionClassName="text-muted-foreground"
               />
             </>
           )}

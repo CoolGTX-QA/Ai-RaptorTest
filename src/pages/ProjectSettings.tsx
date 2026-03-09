@@ -79,7 +79,6 @@ interface ProjectSettings {
   sla_settings: SLASettings | null;
   test_types: TestType[] | null;
   execution_statuses: ExecutionStatus[] | null;
-  tc_id_prefix: string | null;
 }
 
 interface CustomStatus {
@@ -300,9 +299,6 @@ export default function ProjectSettings() {
   const [environments, setEnvironments] = useState<TestEnvironment[]>(DEFAULT_ENVIRONMENTS);
   const [executionStatuses, setExecutionStatuses] = useState<ExecutionStatus[]>(DEFAULT_EXECUTION_STATUSES);
 
-  // Test Case ID Prefix
-  const [tcIdPrefix, setTcIdPrefix] = useState<string>("TC");
-
   // Notification & Automation Settings
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [automationSettings, setAutomationSettings] = useState<AutomationSettings>(DEFAULT_AUTOMATION_SETTINGS);
@@ -373,7 +369,6 @@ export default function ProjectSettings() {
           sla_settings: settingsData.sla_settings as unknown as SLASettings | null,
           test_types: settingsData.test_types as unknown as TestType[] | null,
           execution_statuses: settingsData.execution_statuses as unknown as ExecutionStatus[] | null,
-          tc_id_prefix: (settingsData as any).tc_id_prefix || "TC",
         });
         
         // Populate local state
@@ -388,7 +383,6 @@ export default function ProjectSettings() {
         setSlaSettings((settingsData.sla_settings as unknown as SLASettings) || DEFAULT_SLA_SETTINGS);
         setTestTypes((settingsData.test_types as unknown as TestType[]) || DEFAULT_TEST_TYPES);
         setExecutionStatuses((settingsData.execution_statuses as unknown as ExecutionStatus[]) || DEFAULT_EXECUTION_STATUSES);
-        setTcIdPrefix((settingsData as any).tc_id_prefix || "TC");
       }
     } catch (error: any) {
       console.error("Error fetching project settings:", error);
@@ -420,7 +414,6 @@ export default function ProjectSettings() {
         sla_settings: JSON.parse(JSON.stringify(slaSettings)),
         test_types: JSON.parse(JSON.stringify(testTypes)),
         execution_statuses: JSON.parse(JSON.stringify(executionStatuses)),
-        tc_id_prefix: tcIdPrefix.trim() || "TC",
         updated_at: new Date().toISOString(),
       };
 
@@ -695,40 +688,6 @@ export default function ProjectSettings() {
 
           {/* Test Cases Tab */}
           <TabsContent value="test-cases" className="space-y-6">
-            {/* Test Case ID Prefix Card */}
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Test Case ID Prefix
-                </CardTitle>
-                <CardDescription>
-                  Set the prefix for auto-generated test case IDs (e.g., VE_01, TC_01)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="space-y-2 flex-1 max-w-xs">
-                    <Label>ID Prefix</Label>
-                    <Input
-                      placeholder="e.g., Tvo, TC, PRJ"
-                      value={tcIdPrefix}
-                      onChange={(e) => setTcIdPrefix(e.target.value.replace(/[^A-Za-z0-9]/g, ""))}
-                      maxLength={10}
-                      disabled={!canManageSettings}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      New test cases will be numbered as {tcIdPrefix || "TC"}_001, {tcIdPrefix || "TC"}_002, etc.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>Preview:</span>
-                    <Badge variant="outline" className="font-mono">{tcIdPrefix || "TC"}_001</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             <div className="grid gap-6 md:grid-cols-2">
               {/* Custom Statuses */}
               <Card className="border-border">

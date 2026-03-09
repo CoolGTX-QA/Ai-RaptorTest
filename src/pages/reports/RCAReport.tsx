@@ -98,6 +98,7 @@ export default function RCAReport() {
             value="15"
             description="50% completion"
             icon={CheckCircle}
+            iconClassName="text-chart-1"
             descriptionClassName="text-primary"
           />
           <StatCard
@@ -105,12 +106,14 @@ export default function RCAReport() {
             value="8"
             description="Being worked on"
             icon={Clock}
+            iconClassName="text-chart-4"
           />
           <StatCard
             title="Pending"
             value="7"
             description="Requires attention"
             icon={AlertCircle}
+            iconClassName="text-destructive"
             descriptionClassName="text-destructive"
           />
         </div>

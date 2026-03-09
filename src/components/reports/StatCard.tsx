@@ -20,19 +20,12 @@ export function StatCard({
   descriptionClassName,
 }: StatCardProps) {
   return (
-    <Card className="border-border hover:border-primary/50 hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 group">
+    <Card className="border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        {Icon && (
-          <Icon 
-            className={cn(
-              "h-4 w-4 text-primary transition-transform duration-200 group-hover:scale-125", 
-              iconClassName
-            )} 
-          />
-        )}
+        {Icon && <Icon className={cn("h-4 w-4 text-muted-foreground", iconClassName)} />}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-foreground">{value}</div>
