@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -63,7 +64,7 @@ export default function TMTSettings() {
   const [weeklyDigest, setWeeklyDigest] = useState(false);
 
   // Appearance settings
-  const [theme, setTheme] = useState("system");
+  const { theme, setTheme: setNextTheme } = useTheme();
   const [compactMode, setCompactMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -334,7 +335,7 @@ export default function TMTSettings() {
                   <Select
                     value={theme}
                     onValueChange={(v) => {
-                      setTheme(v);
+                      setNextTheme(v);
                       markChanged();
                     }}
                   >
