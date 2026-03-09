@@ -335,7 +335,7 @@ export default function TMTSettings() {
                   <Select
                     value={theme}
                     onValueChange={(v) => {
-                      setTheme(v);
+                      setNextTheme(v);
                       markChanged();
                     }}
                   >
