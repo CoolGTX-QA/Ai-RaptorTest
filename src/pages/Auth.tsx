@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug } from "lucide-react";
+import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug, FlaskConical, FolderTree, GitBranch, BrainCircuit } from "lucide-react";
+import { useEffect, useRef } from "react";
 import VaporizeTextCycle, { Tag } from "@/components/ui/vapour-text-effect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,37 @@ import { z } from "zod";
 const emailSchema = z.string().trim().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const fullNameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
+
+function TypewriterHeading() {
+  const text = "Modern Test Management Platform";
+  const [displayed, setDisplayed] = useState("");
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i <= text.length) {
+        setDisplayed(text.slice(0, i));
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 60);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const blink = setInterval(() => setCursorVisible((v) => !v), 530);
+    return () => clearInterval(blink);
+  }, []);
+
+  return (
+    <h2 className="text-3xl font-bold mb-4 text-primary-foreground drop-shadow-lg min-h-[2.5rem]">
+      {displayed}
+      <span className={`inline-block w-[3px] h-[1em] bg-primary-foreground ml-1 align-middle transition-opacity ${cursorVisible ? "opacity-100" : "opacity-0"}`} />
+    </h2>
+  );
+}
 
 export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -563,34 +595,31 @@ export default function Auth() {
               {/* Top glossy shine */}
               <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary-foreground/40 to-transparent" />
               
-              <h2 className="text-4xl font-bold mb-4 text-primary-foreground drop-shadow-lg">
-                Modern Test Management Platform
-              </h2>
-              <p className="text-lg text-primary-foreground/90 mb-8 leading-relaxed">
-                Streamline your testing process with our comprehensive test
-                management solution. Create, organize, and execute test cases with
-                ease.
+              <TypewriterHeading />
+              <p className="text-base text-primary-foreground/85 mb-8 leading-relaxed">
+                End-to-end quality assurance platform with AI-powered test generation, 
+                autonomous testing, real-time defect tracking, and advanced analytics — 
+                all in one unified workspace.
               </p>
               
-              <div className="space-y-5">
-                <div className="flex items-center gap-4 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <CheckCircle className="h-6 w-6 text-primary-foreground" />
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { icon: BrainCircuit, text: "AI-Powered Test Case Generation" },
+                  { icon: Zap, text: "Autonomous Test Execution" },
+                  { icon: FolderTree, text: "Hierarchical Test Repository" },
+                  { icon: FlaskConical, text: "Test Runs & Execution Tracking" },
+                  { icon: Bug, text: "Integrated Defect Management" },
+                  { icon: BarChart3, text: "Advanced Reports & Analytics" },
+                  { icon: Shield, text: "Risk Assessment & Predictions" },
+                  { icon: Users, text: "Role-Based Team Workspaces" },
+                ].map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-center gap-3 group">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15 backdrop-blur-sm shadow-md group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <span className="text-sm text-primary-foreground/90 font-medium">{text}</span>
                   </div>
-                  <span className="text-lg text-primary-foreground font-medium">Intuitive test case management</span>
-                </div>
-                <div className="flex items-center gap-4 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Users className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <span className="text-lg text-primary-foreground font-medium">Collaborative workspace</span>
-                </div>
-                <div className="flex items-center gap-4 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <BarChart3 className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <span className="text-lg text-primary-foreground font-medium">Comprehensive reporting</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
