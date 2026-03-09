@@ -64,9 +64,14 @@ export default function TMTSettings() {
   const [weeklyDigest, setWeeklyDigest] = useState(false);
 
   // Appearance settings
-  const { theme, setTheme: setNextTheme } = useTheme();
+  const { theme, setTheme: setNextTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Language & Region
   const [language, setLanguage] = useState("en");
@@ -333,7 +338,7 @@ export default function TMTSettings() {
                 <div className="space-y-2">
                   <Label htmlFor="theme">Theme</Label>
                   <Select
-                    value={theme}
+                    value={mounted ? theme : "light"}
                     onValueChange={(v) => {
                       setNextTheme(v);
                       markChanged();
@@ -348,6 +353,11 @@ export default function TMTSettings() {
                       <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
+                  {mounted && resolvedTheme && (
+                    <p className="text-xs text-muted-foreground">
+                      Currently using: {resolvedTheme} theme
+                    </p>
+                  )}
                 </div>
 
                 <Separator />
