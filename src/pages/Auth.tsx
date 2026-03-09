@@ -564,34 +564,31 @@ export default function Auth() {
               {/* Top glossy shine */}
               <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary-foreground/40 to-transparent" />
               
-              <h2 className="text-4xl font-bold mb-4 text-primary-foreground drop-shadow-lg">
-                Modern Test Management Platform
-              </h2>
-              <p className="text-lg text-primary-foreground/90 mb-8 leading-relaxed">
-                Streamline your testing process with our comprehensive test
-                management solution. Create, organize, and execute test cases with
-                ease.
+              <TypewriterHeading />
+              <p className="text-base text-primary-foreground/85 mb-8 leading-relaxed">
+                End-to-end quality assurance platform with AI-powered test generation, 
+                autonomous testing, real-time defect tracking, and advanced analytics — 
+                all in one unified workspace.
               </p>
               
-              <div className="space-y-5">
-                <div className="flex items-center gap-4 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <CheckCircle className="h-6 w-6 text-primary-foreground" />
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { icon: BrainCircuit, text: "AI-Powered Test Case Generation" },
+                  { icon: Zap, text: "Autonomous Test Execution" },
+                  { icon: FolderTree, text: "Hierarchical Test Repository" },
+                  { icon: FlaskConical, text: "Test Runs & Execution Tracking" },
+                  { icon: Bug, text: "Integrated Defect Management" },
+                  { icon: BarChart3, text: "Advanced Reports & Analytics" },
+                  { icon: Shield, text: "Risk Assessment & Predictions" },
+                  { icon: Users, text: "Role-Based Team Workspaces" },
+                ].map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-center gap-3 group">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15 backdrop-blur-sm shadow-md group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <span className="text-sm text-primary-foreground/90 font-medium">{text}</span>
                   </div>
-                  <span className="text-lg text-primary-foreground font-medium">Intuitive test case management</span>
-                </div>
-                <div className="flex items-center gap-4 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Users className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <span className="text-lg text-primary-foreground font-medium">Collaborative workspace</span>
-                </div>
-                <div className="flex items-center gap-4 group">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20 backdrop-blur-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <BarChart3 className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <span className="text-lg text-primary-foreground font-medium">Comprehensive reporting</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
