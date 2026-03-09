@@ -19,6 +19,37 @@ const emailSchema = z.string().trim().email("Please enter a valid email address"
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const fullNameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
 
+function TypewriterHeading() {
+  const text = "Modern Test Management Platform";
+  const [displayed, setDisplayed] = useState("");
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i <= text.length) {
+        setDisplayed(text.slice(0, i));
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 60);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const blink = setInterval(() => setCursorVisible((v) => !v), 530);
+    return () => clearInterval(blink);
+  }, []);
+
+  return (
+    <h2 className="text-3xl font-bold mb-4 text-primary-foreground drop-shadow-lg min-h-[2.5rem]">
+      {displayed}
+      <span className={`inline-block w-[3px] h-[1em] bg-primary-foreground ml-1 align-middle transition-opacity ${cursorVisible ? "opacity-100" : "opacity-0"}`} />
+    </h2>
+  );
+}
+
 export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
