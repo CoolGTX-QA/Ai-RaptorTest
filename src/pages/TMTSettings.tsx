@@ -64,7 +64,7 @@ export default function TMTSettings() {
   const [weeklyDigest, setWeeklyDigest] = useState(false);
 
   // Appearance settings
-  const [theme, setTheme] = useState("system");
+  const { theme, setTheme: setNextTheme } = useTheme();
   const [compactMode, setCompactMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
