@@ -200,6 +200,33 @@ export default function Auth() {
     }
   };
 
+  const featureTimelineData: TimelineItem[] = [
+    {
+      id: 1, title: "AI Generation", date: "Core", content: "Generate comprehensive test cases from requirements using AI models with smart prioritization.", category: "AI", icon: BrainCircuit, relatedIds: [2, 3], status: "completed", energy: 95,
+    },
+    {
+      id: 2, title: "Autonomous Testing", date: "Core", content: "Fully autonomous test execution with browser automation and intelligent error analysis.", category: "Automation", icon: Zap, relatedIds: [1, 3], status: "completed", energy: 90,
+    },
+    {
+      id: 3, title: "Test Repository", date: "Core", content: "Hierarchical folder-based test case management with versioning and review workflows.", category: "Repository", icon: FolderTree, relatedIds: [1, 4], status: "completed", energy: 100,
+    },
+    {
+      id: 4, title: "Test Execution", date: "Core", content: "Create test runs, assign to team members, and track execution status in real-time.", category: "Execution", icon: FlaskConical, relatedIds: [3, 5], status: "in-progress", energy: 85,
+    },
+    {
+      id: 5, title: "Defect Tracking", date: "Core", content: "Integrated defect management linked to test cases with severity and priority tracking.", category: "Defects", icon: Bug, relatedIds: [4, 6], status: "in-progress", energy: 80,
+    },
+    {
+      id: 6, title: "Reports & Analytics", date: "Core", content: "Advanced dashboards with execution reports, defect leakage, traceability matrices, and RCA.", category: "Reports", icon: BarChart3, relatedIds: [5, 7], status: "completed", energy: 88,
+    },
+    {
+      id: 7, title: "Risk Assessment", date: "Core", content: "AI-powered risk scoring, predictions, and mitigation tracking for proactive quality management.", category: "Risk", icon: Shield, relatedIds: [6, 8], status: "in-progress", energy: 70,
+    },
+    {
+      id: 8, title: "Team Workspaces", date: "Core", content: "Role-based workspaces with project management, member invitations, and granular permissions.", category: "Collaboration", icon: Users, relatedIds: [7, 1], status: "completed", energy: 92,
+    },
+  ];
+
   return (
     <div className="min-h-screen flex overflow-hidden">
       {/* Left Panel - Auth Form with Glossy Effect */}
