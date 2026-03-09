@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Layers, CheckCircle, Users, BarChart3, Shield, Zap, Bug, FlaskConical, FolderTree, GitBranch, BrainCircuit } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Layers, Users, BarChart3, Shield, Zap, Bug, FlaskConical, FolderTree, BrainCircuit, GitBranch, Clock } from "lucide-react";
+import RadialOrbitalTimeline, { type TimelineItem } from "@/components/ui/radial-orbital-timeline";
 import VaporizeTextCycle, { Tag } from "@/components/ui/vapour-text-effect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -199,6 +199,33 @@ export default function Auth() {
       navigate("/dashboard");
     }
   };
+
+  const featureTimelineData: TimelineItem[] = [
+    {
+      id: 1, title: "AI Generation", date: "Core", content: "Generate comprehensive test cases from requirements using AI models with smart prioritization.", category: "AI", icon: BrainCircuit, relatedIds: [2, 3], status: "completed", energy: 95,
+    },
+    {
+      id: 2, title: "Autonomous Testing", date: "Core", content: "Fully autonomous test execution with browser automation and intelligent error analysis.", category: "Automation", icon: Zap, relatedIds: [1, 3], status: "completed", energy: 90,
+    },
+    {
+      id: 3, title: "Test Repository", date: "Core", content: "Hierarchical folder-based test case management with versioning and review workflows.", category: "Repository", icon: FolderTree, relatedIds: [1, 4], status: "completed", energy: 100,
+    },
+    {
+      id: 4, title: "Test Execution", date: "Core", content: "Create test runs, assign to team members, and track execution status in real-time.", category: "Execution", icon: FlaskConical, relatedIds: [3, 5], status: "in-progress", energy: 85,
+    },
+    {
+      id: 5, title: "Defect Tracking", date: "Core", content: "Integrated defect management linked to test cases with severity and priority tracking.", category: "Defects", icon: Bug, relatedIds: [4, 6], status: "in-progress", energy: 80,
+    },
+    {
+      id: 6, title: "Reports & Analytics", date: "Core", content: "Advanced dashboards with execution reports, defect leakage, traceability matrices, and RCA.", category: "Reports", icon: BarChart3, relatedIds: [5, 7], status: "completed", energy: 88,
+    },
+    {
+      id: 7, title: "Risk Assessment", date: "Core", content: "AI-powered risk scoring, predictions, and mitigation tracking for proactive quality management.", category: "Risk", icon: Shield, relatedIds: [6, 8], status: "in-progress", energy: 70,
+    },
+    {
+      id: 8, title: "Team Workspaces", date: "Core", content: "Role-based workspaces with project management, member invitations, and granular permissions.", category: "Collaboration", icon: Users, relatedIds: [7, 1], status: "completed", energy: 92,
+    },
+  ];
 
   return (
     <div className="min-h-screen flex overflow-hidden">
@@ -503,126 +530,43 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Right Panel - Hero Section with TMT Visual */}
+      {/* Right Panel - Orbital Timeline */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden">
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/80" />
         
-        {/* Animated floating orbs */}
+        {/* Subtle floating orbs */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Large glowing orb - top left */}
-          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-gradient-to-br from-primary-foreground/20 to-transparent blur-3xl animate-pulse" />
-          
-          {/* Medium orb - bottom right */}
-          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-gradient-to-tl from-primary-foreground/15 to-transparent blur-3xl animate-pulse delay-1000" />
-          
-          {/* Small floating orbs with custom animation */}
-          <div className="absolute top-[15%] right-[10%] w-4 h-4 rounded-full bg-primary-foreground/40 shadow-lg shadow-primary-foreground/20" 
-               style={{ animation: 'float 6s ease-in-out infinite' }} />
-          <div className="absolute top-[25%] left-[8%] w-3 h-3 rounded-full bg-primary-foreground/30" 
-               style={{ animation: 'float 8s ease-in-out infinite 1s' }} />
-          <div className="absolute bottom-[30%] right-[15%] w-5 h-5 rounded-full bg-primary-foreground/35" 
-               style={{ animation: 'float 7s ease-in-out infinite 2s' }} />
-          <div className="absolute bottom-[20%] left-[12%] w-2 h-2 rounded-full bg-primary-foreground/45" 
-               style={{ animation: 'float 5s ease-in-out infinite 0.5s' }} />
-          <div className="absolute top-[60%] right-[8%] w-3 h-3 rounded-full bg-primary-foreground/25" 
-               style={{ animation: 'float 9s ease-in-out infinite 3s' }} />
-          
-          {/* Geometric accent lines */}
-          <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="white" stopOpacity="0" />
-                <stop offset="50%" stopColor="white" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="white" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <line x1="0" y1="30%" x2="40%" y2="0" stroke="url(#lineGrad)" strokeWidth="1" />
-            <line x1="60%" y1="100%" x2="100%" y2="70%" stroke="url(#lineGrad)" strokeWidth="1" />
-            <line x1="100%" y1="20%" x2="70%" y2="50%" stroke="url(#lineGrad)" strokeWidth="1" />
-          </svg>
-          
-          {/* Hexagon grid pattern - subtle */}
-          <div className="absolute top-10 right-10 opacity-10">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-              <polygon points="60,5 110,30 110,80 60,105 10,80 10,30" fill="none" stroke="white" strokeWidth="1" />
-              <polygon points="60,20 95,37 95,73 60,90 25,73 25,37" fill="none" stroke="white" strokeWidth="0.5" />
-            </svg>
-          </div>
-          <div className="absolute bottom-16 left-8 opacity-10">
-            <svg width="80" height="80" viewBox="0 0 120 120">
-              <polygon points="60,5 110,30 110,80 60,105 10,80 10,30" fill="none" stroke="white" strokeWidth="1" />
-            </svg>
-          </div>
+          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-primary-foreground/10 blur-3xl animate-pulse" />
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-primary-foreground/8 blur-3xl animate-pulse" />
         </div>
-        
-        <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); }
-            25% { transform: translateY(-20px) translateX(10px); }
-            50% { transform: translateY(-10px) translateX(-10px); }
-            75% { transform: translateY(-25px) translateX(5px); }
-          }
-        `}</style>
 
-        {/* Glossy glass panel */}
-        <div className="absolute inset-0 flex items-center justify-center p-12">
-          <div className="relative max-w-lg">
-            {/* Glowing backdrop */}
-            <div className="absolute -inset-4 bg-primary-foreground/5 rounded-3xl blur-xl" />
-            
-            <div className="relative bg-primary-foreground/10 backdrop-blur-md rounded-2xl p-8 border border-primary-foreground/20 overflow-hidden">
-              {/* Animated glossy border shine */}
-              <div 
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                  backgroundSize: '200% 100%',
-                  animation: 'shimmer 3s ease-in-out infinite',
-                  maskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                  maskComposite: 'xor',
-                  WebkitMaskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                  WebkitMaskComposite: 'xor',
-                  padding: '1px',
-                }}
-              />
-              <style>{`
-                @keyframes shimmer {
-                  0% { background-position: 200% 0; }
-                  100% { background-position: -200% 0; }
-                }
-              `}</style>
-              {/* Top glossy shine */}
-              <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary-foreground/40 to-transparent" />
-              
-              <TypewriterHeading />
-              <p className="text-base text-primary-foreground/85 mb-8 leading-relaxed">
-                End-to-end quality assurance platform with AI-powered test generation, 
-                autonomous testing, real-time defect tracking, and advanced analytics — 
-                all in one unified workspace.
-              </p>
-              
-              <div className="grid grid-cols-1 gap-4">
-                {[
-                  { icon: BrainCircuit, text: "AI-Powered Test Case Generation" },
-                  { icon: Zap, text: "Autonomous Test Execution" },
-                  { icon: FolderTree, text: "Hierarchical Test Repository" },
-                  { icon: FlaskConical, text: "Test Runs & Execution Tracking" },
-                  { icon: Bug, text: "Integrated Defect Management" },
-                  { icon: BarChart3, text: "Advanced Reports & Analytics" },
-                  { icon: Shield, text: "Risk Assessment & Predictions" },
-                  { icon: Users, text: "Role-Based Team Workspaces" },
-                ].map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-center gap-3 group">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15 backdrop-blur-sm shadow-md group-hover:scale-110 transition-transform duration-300">
-                      <Icon className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <span className="text-sm text-primary-foreground/90 font-medium">{text}</span>
+        {/* Orbital Timeline */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <RadialOrbitalTimeline
+            timelineData={featureTimelineData}
+            centerContent={
+              <div className="flex flex-col items-center text-center pointer-events-none">
+                {/* Logo */}
+                <div className="relative mb-3">
+                  <div className="absolute -inset-3 bg-primary-foreground/15 rounded-full blur-xl" />
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-foreground/25 to-primary-foreground/10 border border-primary-foreground/30 backdrop-blur-sm shadow-xl overflow-hidden">
+                    <Layers className="h-9 w-9 text-primary-foreground drop-shadow-md relative z-10" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-foreground/30 via-primary-foreground/5 to-transparent pointer-events-none" />
                   </div>
-                ))}
+                </div>
+                <span className="text-lg font-bold text-primary-foreground drop-shadow-md">RaptorTest</span>
+                <span className="text-[10px] text-primary-foreground/60 mt-0.5 tracking-wider uppercase">Click a feature to explore</span>
               </div>
-            </div>
-          </div>
+            }
+          />
+        </div>
+
+        {/* Bottom tagline */}
+        <div className="absolute bottom-8 left-0 right-0 text-center">
+          <p className="text-sm text-primary-foreground/60 font-medium">
+            End-to-end Quality Assurance Platform
+          </p>
         </div>
       </div>
     </div>
