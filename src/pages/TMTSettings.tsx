@@ -338,7 +338,7 @@ export default function TMTSettings() {
                 <div className="space-y-2">
                   <Label htmlFor="theme">Theme</Label>
                   <Select
-                    value={theme}
+                    value={mounted ? theme : "light"}
                     onValueChange={(v) => {
                       setNextTheme(v);
                       markChanged();
@@ -353,6 +353,11 @@ export default function TMTSettings() {
                       <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
+                  {mounted && resolvedTheme && (
+                    <p className="text-xs text-muted-foreground">
+                      Currently using: {resolvedTheme} theme
+                    </p>
+                  )}
                 </div>
 
                 <Separator />
