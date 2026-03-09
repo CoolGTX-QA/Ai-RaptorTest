@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/hooks/useThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -65,13 +65,8 @@ export default function TMTSettings() {
 
   // Appearance settings
   const { theme, setTheme: setNextTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Language & Region
   const [language, setLanguage] = useState("en");
@@ -338,8 +333,8 @@ export default function TMTSettings() {
                 <div className="space-y-2">
                   <Label htmlFor="theme">Theme</Label>
                   <Select
-                    value={mounted ? theme : "light"}
-                    onValueChange={(v) => {
+                    value={theme}
+                    onValueChange={(v: "light" | "dark" | "system") => {
                       setNextTheme(v);
                       markChanged();
                     }}
@@ -353,11 +348,9 @@ export default function TMTSettings() {
                       <SelectItem value="system">System</SelectItem>
                     </SelectContent>
                   </Select>
-                  {mounted && resolvedTheme && (
-                    <p className="text-xs text-muted-foreground">
-                      Currently using: {resolvedTheme} theme
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Currently using: {resolvedTheme} theme
+                  </p>
                 </div>
 
                 <Separator />
